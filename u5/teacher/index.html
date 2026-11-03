@@ -1220,7 +1220,7 @@ const CLONE={
  get gkey(){return LS.get('gem_gkey','')},
  get id(){return LS.get('gem_clone','')},
  get mode(){return LS.get('clone_mode','or')},
- get orModel(){return LS.get('clone_or_model','google/gemini-3.8-flash-tts')},
+ get orModel(){const m=LS.get('clone_or_model','fish-audio/s2.1-pro');return /gemini/.test(m)?'fish-audio/s2.1-pro':m},
  sample:null,
  get on(){if(!LS.get('clone_on',false))return false;return this.mode==='or'?!!(this.sample&&GEM.or):!!(this.id&&this.gkey)},
  get tag(){return this.mode==='or'?'oclone:'+this.orModel+':'+(LS.get('clone_sid','')):'clone:'+this.id},
@@ -1271,7 +1271,7 @@ const CLONE={
   const b=atob(data);const u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);
   if(u[0]===82&&u[1]===73&&u[2]===70&&u[3]===70)return {type:'audio/wav',buf:u.buffer};return {type:'pcm',rate:24000,buf:u.buffer}}
 };
-const CLONE_MODELS=[['google/gemini-3.8-flash-tts','Gemini 3.8'],['fish-audio/s2.1-pro','Fish Audio S2.1'],['mistralai/voxtral-mini-tts-3-0','Voxtral 3']];
+const CLONE_MODELS=[['fish-audio/s2.1-pro','Fish Audio S2.1'],['mistralai/voxtral-mini-tts-3-0','Voxtral 3']];
 function cloneCard(){const C=CLONE;return `<div class="card mt clonecard"><div class="row"><b>🎙️ صوتك أنت بدل Puck</b><span class="grow"></span><label class="row"><input type="checkbox" id="clon" ${LS.get('clone_on',false)?'checked':''} style="width:20px;height:20px"> استخدم صوتي</label></div>
   <div class="muted" style="font-size:.85rem;margin-top:4px">عن طريق OpenRouter ومن رصيدك نفسه — بدون Google وبدون دفع جديد. سجّل مقطعًا قصيرًا بصوتك، ثم جرّب النماذج الثلاثة واختر الأقرب لصوتك.</div>
   <div class="cstep mt"><b>1) سجّل صوتك (10–15 ثانية)</b><div class="script">اقرأ بطريقتك الطبيعية في الشرح: «${esc(C.SCRIPT)}»</div><div class="row"><button class="btn sm" id="r1">⏺ ابدأ التسجيل</button><span class="muted" id="r1s">${C.sample?'✅ يوجد تسجيل محفوظ':''}</span></div><audio id="a1" controls style="display:none;width:100%"></audio></div>
@@ -1816,7 +1816,7 @@ function ttsSettings(){
  bindClone(sp);
  $('#gclr').onclick=async()=>{await GEM.dbClear();gst('تم مسح الأصوات المحفوظة')};
  $('#gprep').onclick=async e=>{if(!GEM.key){toast('أدخل مفتاح Gemini أولًا');return}const b=e.target;b.disabled=true;
-  const r=await GEM.prepare((i,n,ok,msg)=>gst(`⬇️ ${i}/${n} · جاهز ${ok}${msg?' · '+esc(msg):''}<div class="prog mt"><i style="width:${i*100/n}%"></i></div>`));
+  const vlabel=CLONE.on?'🎙️ بصوتك ('+CLONE.orModel.split('/')[1]+')':'🤖 بصوت Puck';const r=await GEM.prepare((i,n,ok,msg)=>gst(`<b>${vlabel}</b> · ⬇️ ${i}/${n} · جاهز ${ok}${msg?' · '+esc(msg):''}<div class="prog mt"><i style="width:${i*100/n}%"></i></div>`));
   b.disabled=false;gst(r.daily?`⛔ انتهت حصة اليوم المجانية من Google لهذا المفتاح (جاهز ${r.ok} من ${r.n}). فعّل الفوترة في Google AI Studio ثم اضغط التجهيز مرة ثانية — يكمل من حيث وقف.`:r.rate?`⛔ Google رفض الطلبات بسبب الحد (جاهز ${r.ok} من ${r.n}). اضغط التجهيز لاحقًا — يكمل من حيث وقف.`:r.stop?`⚠️ توقف التجهيز: ${esc(r.stop.msg||r.stop.message)}`:`✅ جاهز ${r.ok} من ${r.n} مقطعًا — ستعمل الأصوات فورًا أثناء الحصة`)};
 }
 function exportCSV(){

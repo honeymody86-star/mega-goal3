@@ -1807,10 +1807,10 @@ function ttsSettings(){
  $('#gtar').onclick=()=>gtry('الحين بنقارن بين شيئين، ونستخدم صيغة المقارنة.','ar');
  $('#gexp').onclick=async()=>{const r=await GEM.exportPack((i,n)=>gst(`📦 تجميع ${i}/${n}`));
   if(!r.n){gst('لا توجد أصوات مجهّزة بعد — اضغط «⬇️ تجهيز أصوات الدرس» أولًا');return}
-  const f=new File([r.blob],'L11-voices.zip',{type:'application/zip'});
-  gst(`✅ تم تجميع ${r.n} مقطعًا من ${r.total}. أرسل الملف L11-voices.zip في المحادثة لرفعه على الموقع.`);
-  try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:'L11-voices.zip'});return}}catch(e){if(e&&e.name==='AbortError')return}
-  const a=document.createElement('a');a.href=URL.createObjectURL(r.blob);a.download='L11-voices.zip';document.body.append(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},4000)};
+  const f=new File([r.blob],'U5-voices.zip',{type:'application/zip'});
+  gst(`✅ تم تجميع ${r.n} مقطعًا من ${r.total}. أرسل الملف U5-voices.zip في المحادثة لرفعه على الموقع.`);
+  try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:'U5-voices.zip'});return}}catch(e){if(e&&e.name==='AbortError')return}
+  const a=document.createElement('a');a.href=URL.createObjectURL(r.blob);a.download='U5-voices.zip';document.body.append(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},4000)};
  GEM.loadStatic().then(()=>{if(GEM.st&&GEM.st.size)gst(`🌐 ${GEM.st.size} مقطع محفوظ نهائيًا على الموقع — يعمل على أي جهاز بدون مفتاح`)});
  bindClone(sp);
  $('#gclr').onclick=async()=>{await GEM.dbClear();gst('تم مسح الأصوات المحفوظة')};

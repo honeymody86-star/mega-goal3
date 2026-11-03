@@ -867,7 +867,7 @@ const GEM={
  prompt(t,lang){if(lang==='nar')return `Read this aloud as a friendly, real Saudi English teacher explaining a lesson to high-school boys. Speak the Arabic in a natural, relaxed Saudi dialect, warm and clear, with natural pauses, step by step. Pronounce every English word and sentence in a clear American English accent: ${t}`;return lang==='ar'
   ?`اقرأ النص التالي بصوت معلّم سعودي ودود، باللهجة السعودية، بنبرة طبيعية وواضحة ومن غير استعجال: ${t}`
   :`Say in a clear, friendly American English accent, like a teacher talking to a class, at a calm pace: ${t}`},
- k(t,lang){return [CLONE.on?'clone:'+CLONE.id:(this.or?'or2':'g'),this.voice,this.model,lang,t].join('|')},
+ k(t,lang){return [CLONE.on?CLONE.tag:(this.or?'or2':'g'),this.voice,this.model,lang,t].join('|')},
  async idb(){if(this.db!==null)return this.db;this.db=await new Promise(res=>{try{const r=indexedDB.open('gem-tts',1);r.onupgradeneeded=()=>r.result.createObjectStore('a');r.onsuccess=()=>res(r.result);r.onerror=()=>res(false)}catch(e){res(false)}});return this.db},
  async dbGet(k){const db=await this.idb();if(!db)return null;return new Promise(r=>{try{const q=db.transaction('a').objectStore('a').get(k);q.onsuccess=()=>r(q.result||null);q.onerror=()=>r(null)}catch(e){r(null)}})},
  async dbPut(k,v){const db=await this.idb();if(!db)return;try{db.transaction('a','readwrite').objectStore('a').put(v,k)}catch(e){}},
@@ -951,7 +951,7 @@ const GEM={
    onp&&onp(i,items.length,ok)}
   return {ok,n:items.length}}
 };
-GEM.loadStatic();
+GEM.loadStatic();setTimeout(()=>CLONE.loadSample(),0);
 document.addEventListener('pointerdown',function un(){if(GEM.on)GEM.unlock();document.removeEventListener('pointerdown',un,true)},true);
 const SAY=(t,lang='en',cls='')=>{let kw=false;const out=String(t).split(/(\s+)/).map(x=>{if(!x||/^\s+$/.test(x))return x;let s=x,k0=kw;if(s.startsWith('**')){kw=true;k0=true;s=s.slice(2)}let close=false;const m=s.match(/\*\*([^\w]*)$/);if(m){s=s.replace(/\*\*([^\w]*)$/,'$1');close=true}const r=`<span class="w${k0||kw?' kw':''}">${esc(s)}</span>`;if(close)kw=false;return r}).join('');return `<span class="say ${cls}" data-lang="${lang}" ${lang==='ar'?'dir="rtl"':''}>${out}</span>`};
 // تلوين الجملة: [s فاعل] [a فعل مساعد/be] [v فعل رئيسي] [c صيغة المقارنة/التفضيل] [r بقية الجملة]
@@ -1219,21 +1219,34 @@ function studentSpot(m){if(!S.me||m.sid!==S.sid)return;const me=m.id===S.me.id;
 const CLONE={
  get gkey(){return LS.get('gem_gkey','')},
  get id(){return LS.get('gem_clone','')},
- get on(){return !!(LS.get('clone_on',false)&&this.id&&this.gkey)},
+ get mode(){return LS.get('clone_mode','or')},
+ get orModel(){return LS.get('clone_or_model','google/gemini-3.8-flash-tts')},
+ sample:null,
+ get on(){if(!LS.get('clone_on',false))return false;return this.mode==='or'?!!(this.sample&&GEM.or):!!(this.id&&this.gkey)},
+ get tag(){return this.mode==='or'?'oclone:'+this.orModel+':'+(LS.get('clone_sid','')):'clone:'+this.id},
+ async loadSample(){try{const v=await GEM.dbGet('__clone_sample__');if(v)this.sample=v}catch(e){}},
+ async saveSample(wav){const d='data:audio/wav;base64,'+await this.b64(wav);this.sample=d;await GEM.dbPut('__clone_sample__',d);LS.set('clone_sid',Date.now().toString(36))},
+ async orTTS(t,lang,model){model=model||this.orModel;const refs=[{type:'input_audio',input_audio:{data:this.sample}},{type:'text',text:this.SCRIPT}];
+  const send=async withVoice=>{const body={model,input:t,input_references:refs,response_format:'pcm',instructions:this.STYLE[lang]||this.STYLE.nar};if(withVoice)body.voice=/gemini/.test(model)?'Puck':withVoice;
+   return fetch('https://openrouter.ai/api/v1/audio/speech',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+GEM.key,'X-Title':'Mega Goal Lesson'},body:JSON.stringify(body)})};
+  let r=await send(false);if(r.status===400){const tx=await r.clone().text();if(/voice/i.test(tx))r=await send('default')}
+  if(!r.ok){const e=new Error('HTTP '+r.status);e.code=r.status;try{const j=await r.json();e.msg=(j.error&&(j.error.message||j.error))||''}catch(_){}if(r.status===429)e.wait=10;throw e}
+  const ct=(r.headers.get('content-type')||'').toLowerCase();const buf=await r.arrayBuffer();if(!buf.byteLength){const e=new Error('no audio');e.code=0;throw e}
+  if(/mpeg|mp3|wav|ogg|aac/.test(ct))return {type:ct.split(';')[0],buf};const m=ct.match(/rate=(\d+)/);return {type:'pcm',rate:m?+m[1]:24000,buf}},
  model:'gemini-3.8-flash-tts',
- SCRIPT:'هلا والله بالشباب، كيفكم؟ إن شاء الله تمام. اليوم عندنا درس ممتع وجديد. Today we are going to learn how advertisements persuade people. ركزوا معي، وخلونا نمشي خطوة خطوة. Are you ready? يلا نبدأ على بركة الله!',
+ SCRIPT:'هلا والله بالشباب، كيفكم؟ اليوم عندنا درس ممتع وجديد. Today we are going to learn about advertisements. ركزوا معي، ويلا نبدأ!',
  CONSENT:'أنا مالك هذا الصوت وأوافق على أن تستخدم Google هذا الصوت لإنشاء نموذج صوتي اصطناعي.',
  STYLE:{nar:'A warm, friendly Saudi teacher talking to his high-school class; natural relaxed Saudi Arabic; English words in a clear American accent',ar:'warm, friendly Saudi Arabic teacher',en:'clear, friendly American English teacher'},
  rec:null,clips:{},
  async startRec(){const st=await navigator.mediaDevices.getUserMedia({audio:{channelCount:1,echoCancellation:false,noiseSuppression:true,autoGainControl:true}});
   this.stream=st;const mr=new MediaRecorder(st);this.chunks=[];mr.ondataavailable=e=>e.data&&e.data.size&&this.chunks.push(e.data);mr.start(250);this.rec=mr;this.t0=Date.now()},
  stopRec(){return new Promise(res=>{const mr=this.rec;if(!mr){res(null);return}mr.onstop=()=>{this.stream.getTracks().forEach(t=>t.stop());this.rec=null;res({blob:new Blob(this.chunks,{type:mr.mimeType||'audio/mp4'}),dur:(Date.now()-this.t0)/1000})};mr.stop()})},
- async toWav(blob){const ab=await blob.arrayBuffer();const AC=window.AudioContext||window.webkitAudioContext;const ac=new AC();
-  const buf=await new Promise((r,j)=>ac.decodeAudioData(ab,r,j));const len=Math.ceil(buf.duration*24000);const oc=new OfflineAudioContext(1,len,24000);
+ async toWav(blob,rate=24000){const ab=await blob.arrayBuffer();const AC=window.AudioContext||window.webkitAudioContext;const ac=new AC();
+  const buf=await new Promise((r,j)=>ac.decodeAudioData(ab,r,j));const len=Math.ceil(buf.duration*rate);const oc=new OfflineAudioContext(1,len,rate);
   const src=oc.createBufferSource();src.buffer=buf;src.connect(oc.destination);src.start();const out=await oc.startRendering();
   const f=out.getChannelData(0);let mx=0;for(let i=0;i<f.length;i++)mx=Math.max(mx,Math.abs(f[i]));const g=mx>0?Math.min(4,.9/mx):1;
   const pcm=new Int16Array(f.length);for(let i=0;i<f.length;i++)pcm[i]=Math.max(-1,Math.min(1,f[i]*g))*32767;try{ac.close()}catch(e){}
-  return {wav:GEM.wav(pcm.buffer,24000),dur:buf.duration}},
+  return {wav:GEM.wav(pcm.buffer,rate),dur:buf.duration}},
  b64(blob){return new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(String(fr.result).split(',')[1]);fr.readAsDataURL(blob)})},
  findId(j){const s=JSON.stringify(j);const m=s.match(/"(voice_[A-Za-z0-9_\-]+)"/)||s.match(/"(voicekey_[A-Za-z0-9_\-+/=]+)"/)||s.match(/voices\/(voice_[A-Za-z0-9_\-]+)/);return m?m[1]:''},
  async create(){const a=this.clips.src,b=this.clips.con;if(!a||!b)throw new Error('سجّل التسجيلين أولًا');
@@ -1250,7 +1263,7 @@ const CLONE={
    else last=(j.error&&j.error.message)||('HTTP '+r.status);
    if(r.status!==400)break}
   throw new Error(last)},
- async tts(t,lang){const body={model:this.model,input:[{type:'user_input',content:[{type:'text',text:t,annotations:[{type:'speech_metadata',style:this.STYLE[lang]||this.STYLE.nar}]}]}],response_format:{type:'audio'},generation_config:{speech_config:[{voice:this.id}]}};
+ async tts(t,lang){if(this.mode==='or')return this.orTTS(t,lang);const body={model:this.model,input:[{type:'user_input',content:[{type:'text',text:t,annotations:[{type:'speech_metadata',style:this.STYLE[lang]||this.STYLE.nar}]}]}],response_format:{type:'audio'},generation_config:{speech_config:[{voice:this.id}]}};
   const r=await fetch('https://generativelanguage.googleapis.com/v1beta/interactions',{method:'POST',headers:{'Content-Type':'application/json','x-goog-api-key':this.gkey},body:JSON.stringify(body)});
   if(!r.ok){const e=new Error('HTTP '+r.status);e.code=r.status;try{const er=(await r.json()).error;e.msg=er.message||'';(er.details||[]).forEach(d=>{if(d.retryDelay)e.wait=parseFloat(d.retryDelay)||0;(d.violations||[]).forEach(v=>{if(/PerDay/i.test((v.quotaId||'')+(v.quotaMetric||'')))e.daily=true})})}catch(_){};throw e}
   const j=await r.json();let data='';const walk=o=>{if(!o||typeof o!=='object')return;if(Array.isArray(o)){o.forEach(walk);return}if(o.type==='audio'&&typeof o.data==='string')data=o.data;if(o.inlineData&&o.inlineData.data)data=o.inlineData.data;Object.values(o).forEach(walk)};walk(j);
@@ -1258,28 +1271,36 @@ const CLONE={
   const b=atob(data);const u=new Uint8Array(b.length);for(let i=0;i<b.length;i++)u[i]=b.charCodeAt(i);
   if(u[0]===82&&u[1]===73&&u[2]===70&&u[3]===70)return {type:'audio/wav',buf:u.buffer};return {type:'pcm',rate:24000,buf:u.buffer}}
 };
-function cloneCard(){const C=CLONE;return `<div class="card mt clonecard"><div class="row"><b>🎙️ صوتك أنت بدل Puck</b><span class="grow"></span><label class="row"><input type="checkbox" id="clon" ${LS.get('clone_on',false)?'checked':''} ${C.id?'':'disabled'} style="width:20px;height:20px"> استخدم صوتي</label></div>
-  <div class="muted" style="font-size:.85rem;margin-top:4px">ميزة Voice Replication من Google: سجّل مقطعين بنفس المايك وفي مكان هادئ، ويصير الدرس كله بصوتك. يحتاج مفتاح Google AI Studio (والأفضل مع تفعيل الفوترة).</div>
-  <div class="row mt"><input id="gk" type="password" class="search" placeholder="مفتاح Google AI Studio" value="${C.gkey?'••••••••••••':''}" style="flex:1;direction:ltr"><button class="btn sm gold" id="gks">حفظ</button></div>
-  <div class="cstep mt"><b>1) عيّنة من صوتك (15–25 ثانية)</b><div class="script">اقرأ بطريقتك الطبيعية في الشرح: «${esc(C.SCRIPT)}»</div><div class="row"><button class="btn sm" id="r1">⏺ ابدأ التسجيل</button><span class="muted" id="r1s"></span></div><audio id="a1" controls style="display:none;width:100%"></audio></div>
-  <div class="cstep mt"><b>2) جملة الموافقة (اقرأها كما هي)</b><div class="script">«${esc(C.CONSENT)}»</div><div class="row"><button class="btn sm" id="r2">⏺ ابدأ التسجيل</button><span class="muted" id="r2s"></span></div><audio id="a2" controls style="display:none;width:100%"></audio></div>
-  <div class="row mt" style="flex-wrap:wrap"><button class="btn sm gold" id="mkv">✨ أنشئ صوتي</button><button class="btn sm" id="tv" ${C.id?'':'disabled'}>▶ تجربة صوتي</button></div>
-  <div id="cst" class="muted mt" style="font-size:.85rem">${C.id?'✅ صوتك جاهز. فعّل «استخدم صوتي» ثم اضغط «⬇️ تجهيز أصوات الدرس».':''}</div></div>`}
+const CLONE_MODELS=[['google/gemini-3.8-flash-tts','Gemini 3.8'],['fish-audio/s2.1-pro','Fish Audio S2.1'],['mistralai/voxtral-mini-tts-3-0','Voxtral 3']];
+function cloneCard(){const C=CLONE;return `<div class="card mt clonecard"><div class="row"><b>🎙️ صوتك أنت بدل Puck</b><span class="grow"></span><label class="row"><input type="checkbox" id="clon" ${LS.get('clone_on',false)?'checked':''} style="width:20px;height:20px"> استخدم صوتي</label></div>
+  <div class="muted" style="font-size:.85rem;margin-top:4px">عن طريق OpenRouter ومن رصيدك نفسه — بدون Google وبدون دفع جديد. سجّل مقطعًا قصيرًا بصوتك، ثم جرّب النماذج الثلاثة واختر الأقرب لصوتك.</div>
+  <div class="cstep mt"><b>1) سجّل صوتك (10–15 ثانية)</b><div class="script">اقرأ بطريقتك الطبيعية في الشرح: «${esc(C.SCRIPT)}»</div><div class="row"><button class="btn sm" id="r1">⏺ ابدأ التسجيل</button><span class="muted" id="r1s">${C.sample?'✅ يوجد تسجيل محفوظ':''}</span></div><audio id="a1" controls style="display:none;width:100%"></audio></div>
+  <div class="cstep mt"><b>2) جرّب واختر النموذج الأقرب لصوتك</b><div class="row mt" style="flex-wrap:wrap">${CLONE_MODELS.map(([m,n])=>`<button class="btn sm ${C.orModel===m?'gold':''}" data-cm="${m}">▶ ${n}</button>`).join('')}</div><div class="muted" style="font-size:.8rem;margin-top:4px">كل تجربة تُخصم من رصيدك بمبلغ بسيط جدًا. النموذج المختار يُعلَّم بالذهبي.</div></div>
+  <div id="cst" class="muted mt" style="font-size:.85rem">${C.on?'✅ صوتك مفعّل. اضغط «⬇️ تجهيز أصوات الدرس» ليتولّد الدرس كله بصوتك.':''}</div>
+  <details class="mt"><summary class="muted" style="cursor:pointer">طريقة Google المباشرة (تحتاج فوترة Google)</summary>
+   <div class="row mt"><input id="gk" type="password" class="search" placeholder="مفتاح Google AI Studio" value="${C.gkey?'••••••••••••':''}" style="flex:1;direction:ltr"><button class="btn sm" id="gks">حفظ</button></div>
+   <div class="cstep mt"><b>جملة الموافقة</b><div class="script">«${esc(C.CONSENT)}»</div><div class="row"><button class="btn sm" id="r2">⏺ ابدأ التسجيل</button><span class="muted" id="r2s"></span></div><audio id="a2" controls style="display:none;width:100%"></audio></div>
+   <button class="btn sm mt" id="mkv">✨ أنشئ صوتي عبر Google</button></details></div>`}
 function bindClone(sp){const C=CLONE;const cst=t=>{const e=$('#cst');if(e)e.innerHTML=t};
- $('#gks').onclick=()=>{const v=$('#gk').value.trim();if(v&&!/^•+$/.test(v)){LS.set('gem_gkey',v);$('#gk').value='••••••••••••';toast('✅ تم حفظ مفتاح Google على هذا الجهاز')}};
- const recBtn=(btn,key,stat,aud,min,max)=>{const b=$(btn);b.onclick=async()=>{
+ $('#gks').onclick=()=>{const v=$('#gk').value.trim();if(v&&!/^•+$/.test(v)){LS.set('gem_gkey',v);$('#gk').value='••••••••••••';toast('✅ تم حفظ مفتاح Google')}};
+ const recBtn=(btn,key,stat,aud,min,max,rate)=>{const b=$(btn);b.onclick=async()=>{
   if(!C.rec){try{await C.startRec()}catch(e){cst('⚠️ لم يُسمح بالمايك: '+esc(e.message));return}b.textContent='⏹ إيقاف';b.classList.add('gold');
    const iv=setInterval(()=>{if(!C.rec){clearInterval(iv);return}const s=Math.round((Date.now()-C.t0)/1000);$(stat).textContent='🔴 '+s+' ث';if(s>=max)b.click()},300);return}
   b.textContent='⏺ إعادة التسجيل';b.classList.remove('gold');const r=await C.stopRec();if(!r)return;
-  try{const w=await C.toWav(r.blob);if(w.dur<min){$(stat).textContent=`⚠️ قصير (${w.dur.toFixed(0)} ث) — سجّل ${min} ث على الأقل`;return}
-   C.clips[key]=w;$(stat).textContent=`✅ ${w.dur.toFixed(0)} ث`;const a=$(aud);a.src=URL.createObjectURL(w.wav);a.style.display='block'}catch(e){$(stat).textContent='⚠️ تعذّر قراءة التسجيل'}}};
- recBtn('#r1','src','#r1s','#a1',10,30);recBtn('#r2','con','#r2s','#a2',3,20);
- $('#mkv').onclick=async e=>{if(!C.gkey){toast('أدخل مفتاح Google أولًا');return}e.target.disabled=true;cst('⏳ Google يتحقق من صوتك وينشئه…');
-  try{const id=await C.create();cst('✅ تم إنشاء صوتك! جرّبه، ثم اضغط «⬇️ تجهيز أصوات الدرس» ليتولّد الدرس كله بصوتك.');$('#clon').disabled=false;$('#clon').checked=true;$('#tv').disabled=false;GEM.mem.clear()}
-  catch(err){cst('⚠️ '+esc(err.message||'فشل الإنشاء'))}e.target.disabled=false};
- $('#clon').onchange=e=>{LS.set('clone_on',e.target.checked);GEM.mem.clear();toast(e.target.checked?'🎙️ سيُستخدم صوتك':'رجعنا لصوت Puck')};
- $('#tv').onclick=()=>{if(!C.on){toast('فعّل «استخدم صوتي» أولًا');return}GEM.unlock();sp('هلا والله بالشباب، معكم الأستاذ محمد الزهراني. Today we are learning about advertisements!','nar')};
+  try{const w=await C.toWav(r.blob,rate);if(w.dur<min){$(stat).textContent=`⚠️ قصير (${w.dur.toFixed(0)} ث) — سجّل ${min} ث على الأقل`;return}
+   C.clips[key]=w;if(key==='src'){await C.saveSample(w.wav);GEM.mem.clear()}$(stat).textContent=`✅ ${w.dur.toFixed(0)} ث`;const a=$(aud);a.src=URL.createObjectURL(w.wav);a.style.display='block';
+   if(key==='src')cst('✅ تم حفظ تسجيلك. الحين جرّب النماذج الثلاثة واختر الأقرب لصوتك.')}catch(e){$(stat).textContent='⚠️ تعذّر قراءة التسجيل'}}};
+ recBtn('#r1','src','#r1s','#a1',8,16,16000);recBtn('#r2','con','#r2s','#a2',3,20,24000);
+ $$('[data-cm]').forEach(b=>b.onclick=async()=>{if(!C.sample){toast('سجّل صوتك أولًا');return}if(!GEM.or){toast('أدخل مفتاح OpenRouter أولًا في القسم السابق');return}
+  const m=b.dataset.cm;LS.set('clone_or_model',m);LS.set('clone_mode','or');$$('[data-cm]').forEach(x=>x.classList.toggle('gold',x===b));GEM.unlock();cst('⏳ جاري توليد التجربة بصوتك…');
+  try{const v=await C.orTTS('هلا والله بالشباب، معكم الأستاذ محمد الزهراني. Today we are learning about advertisements!','nar',m);const a=GEM.audio||(GEM.audio=new Audio());a.muted=false;a.src=URL.createObjectURL(GEM.blob(v));await a.play().catch(()=>{});
+   cst(`🔊 هذا صوتك عبر <span class="en">${esc(m)}</span>. إذا عجبك فعّل «استخدم صوتي» ثم «⬇️ تجهيز أصوات الدرس».`)}
+  catch(e){cst(`⚠️ <span class="en">${esc(m)}</span>: ${esc(e.msg||e.message)} — جرّب نموذجًا آخر`)}});
+ $('#mkv').onclick=async e=>{if(!C.gkey){toast('أدخل مفتاح Google أولًا');return}e.target.disabled=true;cst('⏳ Google يتحقق من صوتك…');
+  try{await C.create();LS.set('clone_mode','g');cst('✅ تم إنشاء صوتك عبر Google.');$('#clon').checked=true;GEM.mem.clear()}catch(err){cst('⚠️ '+esc(err.message||'فشل الإنشاء'))}e.target.disabled=false};
+ $('#clon').onchange=e=>{LS.set('clone_on',e.target.checked);GEM.mem.clear();if(e.target.checked&&!C.on)toast('سجّل صوتك وتأكد من مفتاح OpenRouter أولًا');else toast(e.target.checked?'🎙️ سيُستخدم صوتك':'رجعنا لصوت Puck')};
 }
+
 // ===================== طلاب افتراضيون للتجربة =====================
 const SIM={on:false,bots:new Map(),timers:[],
  toggle(){this.on?this.stop():this.start()},

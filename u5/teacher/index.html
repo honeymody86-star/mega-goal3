@@ -1222,7 +1222,7 @@ const CLONE={
  get mode(){return LS.get('clone_mode','or')},
  get orModel(){const m=LS.get('clone_or_model','fish-audio/s2.1-pro');return /gemini/.test(m)?'fish-audio/s2.1-pro':m},
  sample:null,
- get on(){if(!LS.get('clone_on',false))return false;return this.mode==='or'?!!(this.sample&&GEM.or):!!(this.id&&this.gkey)},
+ get on(){if(!LS.get('clone_on2',false))return false;return this.mode==='or'?!!(this.sample&&GEM.or):!!(this.id&&this.gkey)},
  get tag(){return this.mode==='or'?'oclone:'+this.orModel+':'+(LS.get('clone_sid','')):'clone:'+this.id},
  async loadSample(){try{const v=await GEM.dbGet('__clone_sample__');if(v)this.sample=v}catch(e){}},
  async saveSample(wav){const d='data:audio/wav;base64,'+await this.b64(wav);this.sample=d;await GEM.dbPut('__clone_sample__',d);LS.set('clone_sid',Date.now().toString(36))},
@@ -1259,7 +1259,7 @@ const CLONE={
    if(r.ok){let id=this.findId(j);
     // عملية طويلة؟ ننتظر اكتمالها
     if(!id&&j.name&&/operations\//.test(j.name)){for(let k=0;k<30&&!id;k++){await sleep(2000);const o=await fetch('https://generativelanguage.googleapis.com/v1beta/'+j.name,{headers:hdr}).then(x=>x.json()).catch(()=>({}));id=this.findId(o);if(o.error)throw new Error(o.error.message||'فشل الإنشاء')}}
-    if(id){LS.set('gem_clone',id);LS.set('clone_on',true);return id}last='لم يرجع Google معرّف الصوت'}
+    if(id){LS.set('gem_clone',id);LS.set('clone_on2',true);return id}last='لم يرجع Google معرّف الصوت'}
    else last=(j.error&&j.error.message)||('HTTP '+r.status);
    if(r.status!==400)break}
   throw new Error(last)},
@@ -1272,7 +1272,7 @@ const CLONE={
   if(u[0]===82&&u[1]===73&&u[2]===70&&u[3]===70)return {type:'audio/wav',buf:u.buffer};return {type:'pcm',rate:24000,buf:u.buffer}}
 };
 const CLONE_MODELS=[['fish-audio/s2.1-pro','Fish Audio S2.1'],['mistralai/voxtral-mini-tts-3-0','Voxtral 3']];
-function cloneCard(){const C=CLONE;return `<div class="card mt clonecard"><div class="row"><b>🎙️ صوتك أنت بدل Puck</b><span class="grow"></span><label class="row"><input type="checkbox" id="clon" ${LS.get('clone_on',false)?'checked':''} style="width:20px;height:20px"> استخدم صوتي</label></div>
+function cloneCard(){const C=CLONE;return `<div class="card mt clonecard"><div class="row"><b>🎙️ صوتك أنت بدل Puck</b><span class="grow"></span><label class="row"><input type="checkbox" id="clon" ${LS.get('clone_on2',false)?'checked':''} style="width:20px;height:20px"> استخدم صوتي</label></div>
   <div class="muted" style="font-size:.85rem;margin-top:4px">عن طريق OpenRouter ومن رصيدك نفسه — بدون Google وبدون دفع جديد. سجّل مقطعًا قصيرًا بصوتك، ثم جرّب النماذج الثلاثة واختر الأقرب لصوتك.</div>
   <div class="cstep mt"><b>1) سجّل صوتك (10–15 ثانية)</b><div class="script">اقرأ بطريقتك الطبيعية في الشرح: «${esc(C.SCRIPT)}»</div><div class="row"><button class="btn sm" id="r1">⏺ ابدأ التسجيل</button><span class="muted" id="r1s">${C.sample?'✅ يوجد تسجيل محفوظ':''}</span></div><audio id="a1" controls style="display:none;width:100%"></audio></div>
   <div class="cstep mt"><b>2) جرّب واختر النموذج الأقرب لصوتك</b><div class="row mt" style="flex-wrap:wrap">${CLONE_MODELS.map(([m,n])=>`<button class="btn sm ${C.orModel===m?'gold':''}" data-cm="${m}">▶ ${n}</button>`).join('')}</div><div class="muted" style="font-size:.8rem;margin-top:4px">كل تجربة تُخصم من رصيدك بمبلغ بسيط جدًا. النموذج المختار يُعلَّم بالذهبي.</div></div>
@@ -1298,7 +1298,7 @@ function bindClone(sp){const C=CLONE;const cst=t=>{const e=$('#cst');if(e)e.inne
   catch(e){cst(`⚠️ <span class="en">${esc(m)}</span>: ${esc(e.msg||e.message)} — جرّب نموذجًا آخر`)}});
  $('#mkv').onclick=async e=>{if(!C.gkey){toast('أدخل مفتاح Google أولًا');return}e.target.disabled=true;cst('⏳ Google يتحقق من صوتك…');
   try{await C.create();LS.set('clone_mode','g');cst('✅ تم إنشاء صوتك عبر Google.');$('#clon').checked=true;GEM.mem.clear()}catch(err){cst('⚠️ '+esc(err.message||'فشل الإنشاء'))}e.target.disabled=false};
- $('#clon').onchange=e=>{LS.set('clone_on',e.target.checked);GEM.mem.clear();if(e.target.checked&&!C.on)toast('سجّل صوتك وتأكد من مفتاح OpenRouter أولًا');else toast(e.target.checked?'🎙️ سيُستخدم صوتك':'رجعنا لصوت Puck')};
+ $('#clon').onchange=e=>{LS.set('clone_on2',e.target.checked);GEM.mem.clear();if(e.target.checked&&!C.on)toast('سجّل صوتك وتأكد من مفتاح OpenRouter أولًا');else toast(e.target.checked?'🎙️ سيُستخدم صوتك':'رجعنا لصوت Puck')};
 }
 
 // ===================== طلاب افتراضيون للتجربة =====================

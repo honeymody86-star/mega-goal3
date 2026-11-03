@@ -1870,8 +1870,13 @@ function ttsSettings(){
  bindClone(sp);
  $('#gclr').onclick=async()=>{await GEM.dbClear();gst('تم مسح الأصوات المحفوظة')};
  $('#gprep').onclick=async e=>{if(!GEM.key){toast('أدخل مفتاح Gemini أولًا');return}const b=e.target;b.disabled=true;
-  const vlabel=CLONE.on?'🎙️ بصوتك ('+CLONE.orModel.split('/')[1]+')':'🤖 بصوت Puck';const r=await GEM.prepare((i,n,ok,msg)=>gst(`<b>${vlabel}</b> · ⬇️ ${i}/${n} · جاهز ${ok}${msg?' · '+esc(msg):''}<div class="prog mt"><i style="width:${i*100/n}%"></i></div>`));
-  b.disabled=false;gst(r.daily?`⛔ انتهت حصة اليوم المجانية من Google لهذا المفتاح (جاهز ${r.ok} من ${r.n}). فعّل الفوترة في Google AI Studio ثم اضغط التجهيز مرة ثانية — يكمل من حيث وقف.`:r.rate?`⛔ Google رفض الطلبات بسبب الحد (جاهز ${r.ok} من ${r.n}). اضغط التجهيز لاحقًا — يكمل من حيث وقف.`:r.stop?`⚠️ توقف التجهيز: ${esc(r.stop.msg||r.stop.message)}`:`✅ جاهز ${r.ok} من ${r.n} مقطعًا — ستعمل الأصوات فورًا أثناء الحصة`)};
+  let wl=null;const lock=async()=>{try{if(navigator.wakeLock&&document.visibilityState==='visible')wl=await navigator.wakeLock.request('screen')}catch(_){}};await lock();const onv=()=>{if(document.visibilityState==='visible')lock()};document.addEventListener('visibilitychange',onv);
+  let r,round=0;while(true){round++;
+  const vlabel=CLONE.on?'🎙️ بصوتك ('+CLONE.orModel.split('/')[1]+')':'🤖 بصوت Puck';const _r=await GEM.prepare((i,n,ok,msg)=>gst(`<b>${vlabel}</b> · ⬇️ ${i}/${n} · جاهز ${ok}${msg?' · '+esc(msg):''}<div class="prog mt"><i style="width:${i*100/n}%"></i></div><div class="muted" style="font-size:.8rem">🌙 خلّ الصفحة مفتوحة والجهاز على الشاحن — يكمل لحاله ويصدّر الملف في النهاية${round>1?' · محاولة '+round:''}</div>`));
+   r=_r;const bad=r.stop&&[401,402,403].includes(r.stop.code);if(r.ok>=r.n||bad||round>=8)break;
+   for(let k=90;k>0;k--){gst(`⏳ جاهز ${r.ok} من ${r.n} — بعض المقاطع تعذّرت، يعيد المحاولة تلقائيًا بعد ${k} ث`);await new Promise(x=>setTimeout(x,1000))}}
+  document.removeEventListener('visibilitychange',onv);try{wl&&wl.release()}catch(_){}
+  b.disabled=false;if(r.ok>=r.n&&LS.get('auto_export',true)){setTimeout(()=>$('#gexp')&&$('#gexp').click(),1500)}gst(r.daily?`⛔ انتهت حصة اليوم المجانية من Google لهذا المفتاح (جاهز ${r.ok} من ${r.n}). فعّل الفوترة في Google AI Studio ثم اضغط التجهيز مرة ثانية — يكمل من حيث وقف.`:r.rate?`⛔ Google رفض الطلبات بسبب الحد (جاهز ${r.ok} من ${r.n}). اضغط التجهيز لاحقًا — يكمل من حيث وقف.`:r.stop?`⚠️ توقف التجهيز: ${esc(r.stop.msg||r.stop.message)}`:`✅ جاهز ${r.ok} من ${r.n} مقطعًا — ستعمل الأصوات فورًا أثناء الحصة`)};
 }
 function exportCSV(){
  const ids=STAGES.filter(s=>!['slide','podium'].includes(s.type));

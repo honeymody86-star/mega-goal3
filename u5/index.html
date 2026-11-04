@@ -534,6 +534,7 @@ body{background:#fff;color:var(--ink)}
 #lobby .lcount{font-size:1.3rem;margin:14px 0}#lobby .lcount b{font-size:3rem;color:#2ee59d;font-family:Poppins}
 #lobby .lnames{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-height:38vh;overflow:auto}
 #lobby .lname{background:rgba(46,229,157,.12);border:1px solid rgba(46,229,157,.4);padding:6px 12px;border-radius:999px;font-size:.95rem}
+#pauseov.tb{inset:auto;bottom:0;top:auto;left:0;right:0;padding-left:200px !important;height:auto;background:#f59e0b;color:#1b1300;padding:8px 14px;font-weight:800;font-size:.95rem;pointer-events:none;z-index:9990;display:block;box-shadow:0 4px 14px rgba(0,0,0,.25)}
 </style>
 </head>
 <body>
@@ -1299,7 +1300,7 @@ function sov(html,cls=''){let o=$('#sov');if(!o){o=h('<div id="sov"></div>');doc
 function sovClose(ms=0){setTimeout(()=>{const o=$('#sov');if(o)o.className=''},ms)}
 function sban(t){let b=$('#sban');if(!b){b=h('<div id="sban"></div>');document.body.append(b)}b.innerHTML=t;b.className='on';clearTimeout(b._t);b._t=setTimeout(()=>b.className='',5000)}
 function studentSpot(m){if(!S.me||m.sid!==S.sid)return;const me=m.id===S.me.id;
- if(m.t==='pause'){let b=$('#pauseov');if(m.on){if(!b){b=h('<div id="pauseov"><div class="big">⏸</div><h2>الدرس متوقف مؤقتًا</h2><p class="muted">انتظر، المعلم بيكمل بعد شوي</p></div>');document.body.append(b)}}else b&&b.remove();return}
+ if(m.t==='pause'){let b=$('#pauseov');if(m.on){if(!b){b=h('<div id="pauseov" class="tb">⏸ المعلم أوقف الدرس مؤقتًا — انتبه للشرح</div>');document.body.append(b)}}else b&&b.remove();return}
  if(m.t==='tc'){let b=$('#tcban');if(m.on){if(!b){b=h('<div id="tcban" class="st">🎙️ المعلم يتحدث الآن — انتبه للشرح</div>');document.body.append(b)}}else b&&b.remove();return}
  if(m.t==='spot'&&m.ph==='call'){if(!me){sban(`🎯 تم اختيار: <b>${esc(nameText(m.name))}</b>`);return}
   clap();try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}
@@ -1327,9 +1328,9 @@ const PAUSE={on:false,t0:0,wasAgent:false,
  btn(){let b=$('#pauseb');const show=ROLE==='teacher'&&!!T.sid;if(!b){if(!show)return;b=h('<button id="pauseb"></button>');b.onclick=()=>this.toggle();document.body.append(b)}b.style.display=show?'':'none';b.classList.toggle('on',this.on);b.textContent=this.on?'▶ استئناف الدرس':'⏸ إيقاف مؤقت'},
  toggle(){this.on?this.resume():this.pause()},
  pause(){if(this.on||!T.sid)return;this.on=true;this.t0=Date.now();this.wasAgent=AGENT.on;if(AGENT.on)AGENT.stop();TTS.stop();if(SPOT.busy){SPOT.skip=true;SPOT.w&&SPOT.w(null);SPOT.close()}
-  Net.send({t:'pause',sid:T.sid,on:true});const o=h('<div id="pauseov"><div class="big">⏸</div><h2>الدرس متوقف مؤقتًا</h2><p class="muted">العدّاد متوقف — اضغط «▶ استئناف الدرس» للمتابعة</p></div>');document.body.append(o);this.btn()},
+  Net.send({t:'pause',sid:T.sid,on:true});const o=h('<div id="pauseov" class="tb">⏸ متوقف مؤقتًا — الصوت والعدّاد والوكيل متوقفين · تقدر تشرح وتستخدم كل أزرار الصفحة · اضغط «▶ استئناف الدرس» للمتابعة</div>');document.body.append(o);this.btn()},
  resume(){if(!this.on)return;this.on=false;const d=Date.now()-this.t0;T.start+=d;if(T.goAt)T.goAt+=d;broadcast();Net.send({t:'pause',sid:T.sid,on:false});
-  const o=$('#pauseov');o&&o.remove();this.btn();teacherRender();
+  const o=$('#pauseov');o&&o.remove();this.btn();T.narKey=T.stage+'.'+T.step;teacherRender();
   speak('يلا نكمل يا شباب!').then(()=>{if(this.wasAgent&&!this.on)AGENT.start()})}
 };
 setInterval(()=>PAUSE.btn(),700);
@@ -1488,7 +1489,7 @@ function applySteps(root,step,quiet){
  $$('.gch.cur',root).forEach(e=>e.classList.remove('cur'));{const ons=$$('.b.on',root);const lb=ons[ons.length-1];if(lb&&lb.classList.contains('gch'))lb.classList.add('cur')}
  const spotEl=(!quiet&&root.id==='tmain'&&ROLE==='teacher')?shown.find(e=>e.classList.contains('spotcard')):null;
  if(!quiet)NAR.pending=null;
- if(T.lobby&&ROLE==='teacher')quiet=true;
+ if((T.lobby||PAUSE.on)&&ROLE==='teacher')quiet=true;
  if(!quiet&&root.id==='tmain'&&ROLE==='teacher')T.narKey=T.stage+'.'+step;
  if(!quiet&&shown.length&&NAR.on&&root.id==='tmain'){
   const tg=shown.length<=2?shown.filter(e=>e.dataset.n):[];
@@ -1853,7 +1854,7 @@ function drawTBody(still){
 }
 function setStep(n){const tm=$('#tmain');n=Math.max(1,Math.min(n,T.nsteps));if(n===T.step)return;T.step=n;applySteps(tm,n);updateStepUI();
  const last=$$('.b.on',tm).pop();if(last&&n>1)setTimeout(()=>last.scrollIntoView({behavior:'smooth',block:'center'}),60)}
-function nextStep(){AGENT.manual();if(PAUSE.on){toast('⏸ الدرس متوقف — اضغط «▶ استئناف الدرس»');return}if(SPOT.busy){toast('🎯 انتظر انتهاء الاختيار العشوائي (أو اضغط ⏭ تخطي)');return}if(T.step<T.nsteps)setStep(T.step+1);else{const nb=$('#next');nb.classList.remove('nextpulse');void nb.offsetWidth;nb.classList.add('nextpulse');toast('انتهت عناصر هذه المرحلة — اضغط «التالي»')}}
+function nextStep(){AGENT.manual();if(SPOT.busy){toast('🎯 انتظر انتهاء الاختيار العشوائي (أو اضغط ⏭ تخطي)');return}if(T.step<T.nsteps)setStep(T.step+1);else{const nb=$('#next');nb.classList.remove('nextpulse');void nb.offsetWidth;nb.classList.add('nextpulse');toast('انتهت عناصر هذه المرحلة — اضغط «التالي»')}}
 function updateStepUI(){const c=$('#stepc');if(c)c.textContent=T.step+'/'+T.nsteps;const hnt=$('#taphint');if(hnt)hnt.style.visibility=T.step<T.nsteps?'visible':'hidden'}
 document.addEventListener('keydown',e=>{
  if(!T.sid||!$('#tmain')||e.target.closest('input,textarea,select'))return;

@@ -1352,7 +1352,7 @@ LS.set('set_sim',false);
 // ---------- الاستماع للإعلان (صوت المتصفح الإنجليزي بأعلى جودة متاحة) ----------
 const LISTEN={
  voice(){const vs=(TTS.voices||[]).filter(v=>/^en[-_](US|GB)/i.test(v.lang));for(const r of [/Natural/i,/Premium/i,/Enhanced/i,/Google US English/i,/Samantha/i,/Ava/i,/Aria/i,/Jenny/i]){const v=vs.find(v=>r.test(v.name));if(v)return v}return vs[0]},
- el(id){const e=$(`.lscript[data-ad="${id}"]`);if(!e)return NAR.el('');e.dataset.lang='en';if(GEM.key)delete e.dataset.br;else e.dataset.br='1';return e},
+ el(id){const e=$(`.lscript[data-ad="${id}"]`);if(!e)return NAR.el('');e.dataset.lang='en';const st=GEM.st&&GEM.st.has(GEM.hash(GEM.text(e),'en'));if(GEM.key||st)delete e.dataset.br;else e.dataset.br='1';return e},
  async warm(){if(!GEM.key)return;const L=[...Object.values(LISTEN_TX).map(t=>[t,'en']),...[LISTEN_V.intro,...BRK_V,...NARR.model.filter(Boolean),...Object.values(SPOT_FB).flatMap(f=>[f.ok,f.no]),...Object.values(NARR_GO),...Object.values(NARR_REV)].filter(Boolean).map(t=>[t,'nar'])];
   for(const [t,l] of L){try{await GEM.get(t,l)}catch(e){}await sleep(400)}},
  html(id){const t=LISTEN_TX[id];if(!t)return '';return `<div class="listen"><div class="lh">🎧 <b class="en">Listen first!</b> <span class="arx">استمع للإعلان أولًا</span><button class="btn sm lagain" data-la="${id}" title="إعادة الاستماع">🔁 استمع مرة ثانية</button></div><div class="lscript en" data-ad="${id}">${t.split(/\s+/).map(w=>`<span class="w">${esc(w)}</span>`).join(' ')}</div></div>`},

@@ -520,6 +520,15 @@ body{background:#fff;color:var(--ink)}
 #pauseov{position:fixed;inset:0;z-index:9990;background:rgba(5,10,25,.82);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:#fff;text-align:center}
 #pauseov .big{font-size:3rem}
 .setupcard{margin-top:16px}.setupcard label{display:flex;align-items:center;gap:10px;padding:8px 0;cursor:pointer}.setupcard input{width:22px;height:22px}
+.listen{margin-top:12px;padding:14px 16px;border-radius:18px;background:rgba(99,102,241,.08);border:1px dashed rgba(99,102,241,.45)}
+.listen .lh{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}.listen .lagain{margin-inline-start:auto}
+.lscript{font-size:1.25rem;line-height:1.8;direction:ltr;text-align:left}.lscript .w.hl{background:#ffd60a;border-radius:6px;padding:0 3px}
+.lscript.speaking{outline:3px solid rgba(99,102,241,.35);border-radius:10px}
+.modelad .mline{margin-top:12px;padding:14px 18px;border-radius:18px;background:var(--card,#fff);box-shadow:0 6px 18px rgba(0,0,0,.08)}
+.mtag{display:inline-block;font-size:.85rem;padding:3px 10px;border-radius:999px;background:rgba(99,102,241,.12);margin-bottom:6px}
+.mtx{font-size:1.45rem;direction:ltr;text-align:left;font-weight:600}.red{color:#e11d48;text-decoration:underline 3px rgba(225,29,72,.35)}
+.brktop{margin-top:16px;background:rgba(255,255,255,.92);color:#1e1b4b;border-radius:20px;padding:14px 18px;min-width:300px}
+.brktop .br{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:6px 0;font-size:1.2rem;border-bottom:1px solid rgba(0,0,0,.06)}
 </style>
 </head>
 <body>
@@ -660,14 +669,14 @@ const ADS={
   spot:{q:'Who is Derek Larkin?',o:['an NBA star','a scientist','a shop owner'],a:0,tr:'من هو ديريك لاركن؟'}}
 };
 const STAGES=[
- {id:'open',type:'break',icon:'tv',talk:.3,solve:0,dur:9,fun:'⭐',title:'Warm-up Break',ar:'فاصل البداية — التقط النجوم!',kick:'Unit 5 · Lesson 1',ind:['2-1-1-10','2-1-1-8']},
+ {id:'open',type:'break',icon:'tv',talk:.3,solve:0,dur:30,fun:'⭐',title:'Warm-up Break',ar:'فاصل البداية — التقط النجوم!',kick:'Unit 5 · Lesson 1',ind:['2-1-1-10','2-1-1-8']},
  {id:'discuss',type:'poll',icon:'vote',talk:.5,solve:.6,title:'Listen and Discuss',ar:'هل تؤثر فيك الإعلانات؟',kick:'Warm-up · p.68',ind:['2-1-1-5','2-1-1-8'],
   q:'Do you think you are influenced by advertisements?',tr:'هل تعتقد أن الإعلانات تؤثر فيك؟',o:['Yes, a lot!','A little','Not at all'],oa:['نعم، كثيرًا!','قليلًا','أبدًا'],ic:['😍','🙂','😎']},
  {id:'goal',type:'slide',icon:'target',talk:1,solve:0,title:'Do You Really Need It?',ar:'الوحدة 5: هل تحتاجه فعلًا؟ — هدفنا اليوم',kick:'Unit 5 · Listen and Discuss',ind:['2-1-1-2','2-1-1-10']},
  {id:'car',type:'slide',icon:'medal',talk:1.6,solve:0,ad:'car',title:'Ad 1 · BMX-3000',ar:'الإعلان الأول: السيارة',kick:'Goal step 1 · p.68',ind:['2-1-1-6','2-1-1-7','2-2-1-1']},
  {id:'shampoo',type:'slide',icon:'bulb',talk:1.5,solve:0,ad:'shampoo',title:'Ad 2 · Floral Essence',ar:'الإعلان الثاني: الشامبو',kick:'Goal step 1 · p.68',ind:['2-1-1-6','2-1-1-7','2-2-1-1']},
  {id:'dynex',type:'slide',icon:'puzzle',talk:1.3,solve:0,ad:'dynex',title:'Ad 3 · Dynex',ar:'الإعلان الثالث: المنظّف',kick:'Goal step 1 · p.68',ind:['2-1-1-6','2-1-1-7','2-2-1-1']},
- {id:'brk1',type:'break',icon:'tv',talk:.25,solve:0,dur:8,fun:'🎈',title:'Brain Break',ar:'فاصل سريع — فجّر البالونات!',kick:'Break',ind:['2-1-1-10']},
+ {id:'brk1',type:'break',icon:'tv',talk:.25,solve:0,dur:30,fun:'🎈',title:'Brain Break',ar:'فاصل سريع — فجّر البالونات!',kick:'Break',ind:['2-1-1-10']},
  {id:'water',type:'slide',icon:'planet',talk:1.3,solve:0,ad:'water',title:'Ad 4 · Crystal Spring',ar:'الإعلان الرابع: الماء',kick:'Goal step 1 · p.69',ind:['2-1-1-6','2-1-1-5','2-2-1-1']},
  {id:'shoes',type:'slide',icon:'trophy',talk:1.5,solve:0,ad:'shoes',title:'Ad 5 · Planet Mercury',ar:'الإعلان الخامس: الحذاء',kick:'Goal step 1 · p.69',ind:['2-1-1-6','2-1-1-7','2-2-1-1']},
  {id:'genres',type:'mcq',icon:'target',talk:.4,solve:2,crit:0,title:'Which Ad?',ar:'أي إعلان؟ (فهم المقروء B ص69)',kick:'Check step 1 · Comprehension B',ind:['2-1-1-6','2-1-1-7','2-2-1-1','2-2-1-3'],
@@ -677,7 +686,7 @@ const STAGES=[
    {q:'Which ad does **NOT** use statistics?',tr:'أي إعلان لا يستخدم الأرقام والإحصاءات؟',o:['Dynex','Crystal Spring','BMX-3000'],a:2},
    {q:'Which ad uses a **famous person**?',tr:'أي إعلان يستخدم شخصًا مشهورًا؟',o:['Planet Mercury','Floral Essence','Dynex'],a:0},
    {q:'“Studies show it makes your hair twice as strong.” This uses…',tr:'«الدراسات تثبت أنه يجعل شعرك أقوى مرتين» — هذا يستخدم…',o:['a famous person','numbers & studies','the desire to be special'],a:1}]},
- {id:'brk2',type:'break',icon:'tv',talk:.25,solve:0,dur:8,fun:'🍩',title:'Brain Break',ar:'فاصل — اصطد الدونات!',kick:'Break',ind:['2-1-1-10']},
+ {id:'brk2',type:'break',icon:'tv',talk:.25,solve:0,dur:30,fun:'🍩',title:'Brain Break',ar:'فاصل — اصطد الدونات!',kick:'Break',ind:['2-1-1-10']},
  {id:'vocab',type:'mcq',icon:'puzzle',talk:.4,solve:2.2,crit:1,title:'Word Match',ar:'طابق الكلمة بمعناها (Quick Check A ص69)',kick:'Check step 2 · Vocabulary',ind:['2-1-1-6','2-2-1-1','2-2-1-3'],
   qs:[
    {q:'admire',tr:'يُعجَب / يحترم',o:['respect','meant or planned','causing big change'],a:0},
@@ -687,7 +696,8 @@ const STAGES=[
    {q:'intended',tr:'مقصود',o:['having high-class tastes','belonging only to one (company)','meant or planned'],a:2},
    {q:'revolutionary',tr:'ثوري',o:['causing big change','combination of ingredients','respect'],a:0},
    {q:'sophisticated',tr:'راقٍ',o:['meant or planned','having high-class tastes','the name that identifies a product'],a:1}]},
- {id:'write',type:'tier',icon:'pencil',talk:.4,solve:2.6,crit:2,title:'Create Your Ad',ar:'صمّم إعلانك — اختر مستواك (Pair Work ص69)',kick:'Main goal · Pair Work',ind:['2-1-1-1','2-1-1-7','2-1-1-9','2-1-1-10']},
+ {id:'model',type:'slide',icon:'pencil',talk:1.5,solve:0,title:'Model Ad',ar:'مثال محلول: كيف نكتب إعلانًا مقنعًا؟',kick:'Before you create',ind:['2-1-1-7','2-1-1-9']},
+ {id:'write',type:'tier',icon:'pencil',talk:.4,solve:6,crit:2,title:'Create Your Ad',ar:'صمّم إعلانك — اختر مستواك (Pair Work ص69)',kick:'Main goal · Pair Work',ind:['2-1-1-1','2-1-1-7','2-1-1-9','2-1-1-10']},
  {id:'exit',type:'mcq',icon:'ticket',talk:.25,solve:1.4,title:'Ad Detective',ar:'المحقق الإعلاني: هل حققنا الهدف؟',kick:'Check the goal',ind:['2-2-1-1','2-2-1-3','2-1-1-8'],self:true,
   qs:[
    {q:'“9 out of 10 doctors recommend it.” This ad uses…',tr:'«9 من كل 10 أطباء ينصحون به» — يستخدم…',o:['numbers & studies','a famous person','humor'],a:0},
@@ -724,6 +734,22 @@ const BREAKS={
  brk1:{e:'🎈',n:6,en:'Pop the balloons!',ar:'فجّر البالونات 🎈'},
  brk2:{e:'🍩',n:6,en:'Grab the donuts!',ar:'اصطد الدونات 🍩'}
 };
+
+// نص الإعلان للاستماع قبل الشرح (يُقرأ بصوت المتصفح الإنجليزي — بدون توليد)
+const LISTEN_TX={
+ car:'Introducing the BMX-3000 Sports Car. Tired of being just like everyone else? Set yourself apart from the crowd. With its sophisticated design, the BMX-3000 is made for people with style. Drive it, and people will watch and admire you. The BMX-3000. Be special.',
+ shampoo:'Floral Essence Shampoo, with our exclusive new formula. It contains 28 vitamins and minerals. Studies show it makes your hair twice as strong. Floral Essence. Beautiful hair, backed by science.',
+ dynex:'Tough laundry stains can be frustrating. But not anymore! New Dynex Laundry Detergent has 33 percent more cleaning power than the next brand. Dynex. Clean clothes, every time.',
+ water:'Crystal Spring Water. 100 percent all-natural spring water, just as nature intended. Our bottles are 100 percent recyclable, and they use 50 percent less plastic. Crystal Spring. Good for you, good for the planet.',
+ shoes:'NBA star Derek Larkin says, "I would not wear anything else." Planet Mercury Sneakers, with revolutionary new comfort. Millions of people already wear them. Join the Planet Mercury generation!'
+};
+// المثال المحلول قبل تمرين Create
+const MODEL={product:'SnackGo Juice 🧃',lines:[
+ {en:'Introducing the new [[SnackGo Juice]]!',ar:'نقدّم لكم عصير SnackGo الجديد!',tag:'🟢 Start · ابدأ بالمنتج'},
+ {en:'It has [[50 percent]] more vitamins than other juices.',ar:'فيه فيتامينات أكثر بنسبة 50٪ من العصائر الثانية.',tag:'📊 Trick 1 · Numbers & studies'},
+ {en:'Football star [[Sami Ali]] says, “I drink it every day!”',ar:'نجم الكرة سامي علي يقول: «أشربه كل يوم!»',tag:'⭐ Trick 2 · Famous person'},
+ {en:'Our [[exclusive]] [[formula]] is made from real fruit.',ar:'تركيبتنا الحصرية مصنوعة من فاكهة حقيقية.',tag:'📚 2 new words · exclusive + formula'},
+ {en:'[[Join]] the SnackGo generation today!',ar:'انضم لجيل SnackGo اليوم!',tag:'👥 Finish · Everyone’s doing it'}]};
 
 // =====================================================================
 //  المزامنة اللحظية
@@ -790,7 +816,7 @@ const TTS={
  stop(){this.token++;GEM.stop();if(this.ok)speechSynthesis.cancel();$$('.speaking').forEach(e=>e.classList.remove('speaking'));$$('.w.hl').forEach(e=>e.classList.remove('hl'))},
  async play(els){if(!(this.ok||GEM.on)||!els.length)return;this.stop();const tok=this.token;await new Promise(r=>setTimeout(r,60));
   for(const el of els){if(tok!==this.token)return;await this.one(el,tok)}},
- one(el,tok){if(GEM.on)return GEM.say(el,tok);if(this.sel.mute)return this.silent(el,tok);return new Promise(res=>{
+ one(el,tok){if(GEM.on&&!el.dataset.br)return GEM.say(el,tok);if(this.sel.mute)return this.silent(el,tok);return new Promise(res=>{
   const lang=el.dataset.lang||'en';const text=(el.dataset.t||el.textContent).trim();if(!text){res();return}
   const ws=el.dataset.t?[]:$$('.w',el);const offs=[];let p=0;ws.forEach(w=>{const i=text.indexOf(w.textContent,p);offs.push(i<0?p:i);p=(i<0?p:i)+w.textContent.length});
   const u=new SpeechSynthesisUtterance(text);const v=this.voice(lang);if(v){u.voice=v;u.lang=v.lang}else u.lang=lang==='en'?'en-US':'ar-SA';
@@ -835,7 +861,7 @@ const NARR={
  final:['وصلنا للنهاية يا أبطال! حان وقت التتويج.','شكرًا لكم كلكم، والله إنكم أبدعتوا اليوم. وتذكروا: المرة الجاية لما تشوف إعلان، اسأل نفسك: Do I really need it؟ مع السلامة!']
 };
 const NARR_GO={
- discuss:'صوّتوا الحين!',
+ discuss:'يلا، الوقت بدأ!',
  genres:'يلا ابدأوا، بالتوفيق!',
  vocab:'يلا، ابدأوا المطابقة!',
  write:'يلا، اختاروا مستواكم وابدأوا. أبي أشوف إبداع!',
@@ -858,7 +884,7 @@ const SPOTV={
 };
 // تعليق خاص على إجابة الطالب المختار (تعزيز إذا صح، تصحيح وشرح وتشجيع إذا غلط)
 const SPOT_FB={
- car:{ok:'صح عليك! admire يعني يعجبون فيك ويقدّرونك، والإعلان يبيعك فكرة إن الناس بيعجبون فيك إذا ركبت الدراجة. كفو يا بطل!',
+ car:{ok:'صح عليك! admire يعني يعجبون فيك ويقدّرونك، والإعلان يبيعك فكرة إن الناس بيعجبون فيك إذا ركبت السيارة. كفو يا بطل!',
   no:'لا يا بطل، الإجابة الصحيحة admire، يعني يعجبون فيك ويقدّرونك. الإعلان يقول إن الناس بيطالعونك ويعجبون فيك. ولا يهمك، الحين صارت واضحة.',
   ex:'admire = يُعجَب بـ / يقدّر — الإعلان يعدك بإعجاب الناس'},
  shampoo:{ok:'ممتاز! عبارة studies show تعني إن الإعلان يستخدم الأرقام والدراسات عشان يقنعك. أحسنت والله!',
@@ -874,6 +900,10 @@ const SPOT_FB={
   no:'لا، الإجابة الصحيحة إنه نجم NBA، يعني لاعب كرة سلة مشهور. والإعلان يستخدم الشخص المشهور عشان يقنعك. ما عليه، الحين عرفتها.',
   ex:'NBA star = نجم كرة سلة مشهور — إقناع بشخصية مشهورة'}
 };
+
+NARR.model=['','قبل ما تكتبون إعلانكم، خلوني أوريكم مثال محلول: إعلان لعصير اسمه SnackGo.','أول جملة نقدّم فيها المنتج: Introducing the new SnackGo Juice.','بعدها الحيلة الأولى، الأرقام: It has 50 percent more vitamins. شفتوا الكلمات اللي بالأحمر؟ هذي هي المهمة.','الحيلة الثانية، شخص مشهور: Football star Sami Ali says, I drink it every day.','وحطينا كلمتين جديدتين من الدرس: exclusive و formula.','ونختم بحيلة الكل يسويها: Join the SnackGo generation today! الحين دوركم، أبي كل واحد يصمم إعلانه بنفس الطريقة.'];
+const LISTEN_V={intro:'اسمعوا الإعلان، ركزوا معي:'};
+const BRK_V=['أكثر واحد التقط هو','كفو عليك!'];
 
 // ===================== صوت Gemini (Puck) — للمعلم فقط =====================
 // المفتاح يُحفظ في متصفح المعلم فقط (localStorage) ولا يُكتب في ملفات الموقع
@@ -958,7 +988,7 @@ const GEM={
   return {blob:this.zip(files),n:man.length,total:items.length}},
  // يجمع كل نصوص الدرس (الإنجليزي والعربي) لتجهيزها مسبقًا
  lessonTexts(){const box=h('<div style="position:absolute;left:-99999px;top:0;width:900px"></div>');document.body.append(box);const out=[],seen=new Set();
-  const addN=t=>{if(t&&!seen.has('nar|'+t)){seen.add('nar|'+t);out.push([t,'nar'])}};Object.values(SPOTV).flat().forEach(addN);Object.values(SPOT_FB).forEach(f=>{addN(f.ok);addN(f.no)});if(LS.get('name_voice',true))Object.values(ROSTER).flat().forEach(n=>addN(nameText(n)));
+  const addN=t=>{if(t&&!seen.has('nar|'+t)){seen.add('nar|'+t);out.push([t,'nar'])}};Object.values(SPOTV).flat().forEach(addN);Object.values(SPOT_FB).forEach(f=>{addN(f.ok);addN(f.no)});addN(LISTEN_V.intro);BRK_V.forEach(addN);if(LS.get('name_voice',true))Object.values(ROSTER).flat().forEach(n=>addN(nameText(n)));
   STAGES.forEach(st=>{let html=stageHead(st)+introExtra(st);try{html+=st.type==='slide'?slideBody(st):st.type==='podium'?'':previewEx(st,false,[])}catch(e){}
    box.innerHTML=html;narrAssign(box,st);$$('[data-n]',box).forEach(e=>{const t=e.dataset.n;if(!seen.has('nar|'+t)){seen.add('nar|'+t);out.push([t,'nar'])}});
    [NARR_GO[st.id],NARR_REV[st.id]].forEach(t=>{if(t&&!seen.has('nar|'+t)){seen.add('nar|'+t);out.push([t,'nar'])}});
@@ -970,7 +1000,7 @@ const GEM={
   items.sort((a,b)=>(a[1]==='nar'?0:1)-(b[1]==='nar'?0:1));
   let ok=0,i=0;const wait=ms=>new Promise(r=>setTimeout(r,ms));
   for(const [t,l] of items){i++;let tries=0;
-   while(true){try{const kk=this.k(t,l);const had=this.mem.has(kk)||await this.dbGet(kk);if(!had){const v=await this.fetchPCM(t,l);this.dbPut(kk,v);this.mem.set(kk,v);await wait(1200)}else await this.get(t,l,false);ok++;break}
+   while(true){try{const kk=this.k(t,l);const had=this.mem.has(kk)||(!CLONE.on&&this.st&&this.st.has(this.hash(t,l))&&this.stVoice===this.SV)||await this.dbGet(kk);if(!had){const v=await this.fetchPCM(t,l);this.dbPut(kk,v);this.mem.set(kk,v);await wait(1200)}else await this.get(t,l,false);ok++;break}
     catch(e){
      if(e.code===429&&e.daily){return {ok,n:items.length,stop:e,daily:true}}
      if(e.code===429&&tries<12){tries++;let sec=Math.ceil(Math.max(e.wait||0,20)+2);
@@ -1186,11 +1216,12 @@ const SPOT={cur:null,busy:false,picked:new Set(),w:null,skip:false,
 // ---------- الفواصل ----------
 function breakBody(st){const B=BREAKS[st.id]||BREAKS.open;return `<div class="brk b"><div class="brain">${[...Array(14)].map((_,i)=>`<span style="--x:${(i*37)%100}%;--d:${(i%5)*.35}s;--s:${.8+(i%3)*.35}">${B.e}</span>`).join('')}</div><div class="brkt"><div class="en big2">${esc(B.en)}</div><div class="arx">${esc(B.ar)}</div><div class="brkc" id="brkc">${st.dur}</div></div></div>`}
 function buildBreak(el,st,done){const B=BREAKS[st.id]||BREAKS.open;let got=0,fin=false;
- el.innerHTML=`<div class="qcard card brkg"><div class="center"><b class="en">${esc(B.en)}</b><div class="arx">${esc(B.ar)}</div><div class="brkscore">${B.e} <span id="bs">0</span>/${B.n}</div></div><div class="arena" id="arena"></div><div class="cdbar"><i style="animation-duration:${st.dur}s"></i></div></div>`;
+ el.innerHTML=`<div class="qcard card brkg"><div class="center"><b class="en">${esc(B.en)}</b><div class="arx">${esc(B.ar)}</div><div class="brkscore">${B.e} <span id="bs">0</span></div></div><div class="arena" id="arena"></div><div class="cdbar"><i style="animation-duration:${st.dur}s"></i></div></div>`;
  const ar=$('#arena',el);
  for(let i=0;i<B.n;i++){const b=h(`<button class="fly" style="left:${8+Math.random()*78}%;top:${8+Math.random()*70}%;animation-delay:${(i*.25).toFixed(2)}s">${B.e}</button>`);
-  b.onclick=()=>{if(fin||b.classList.contains('pop2'))return;b.classList.add('pop2');got++;$('#bs',el).textContent=got;clap();if(got>=B.n)end()};ar.append(b)}
- const end=()=>{if(fin)return;fin=true;done({acc:1,pts:got*2,detail:{fun:got,n:B.n}})};setTimeout(end,st.dur*1000)}
+  b.onclick=()=>{if(fin||b.classList.contains('pop2'))return;b.classList.add('pop2');got++;$('#bs',el).textContent=got;clap();
+   setTimeout(()=>{if(fin)return;b.style.left=(8+Math.random()*78)+'%';b.style.top=(8+Math.random()*70)+'%';b.classList.remove('pop2')},700+Math.random()*900)};ar.append(b)}
+ const end=()=>{if(fin)return;fin=true;done({acc:1,pts:Math.min(20,got),detail:{fun:got,n:B.n}})};setTimeout(end,st.dur*1000)}
 // ---------- التصويت ----------
 function pollPreview(st){const c=st.o.map(()=>0);Object.values(T.people).forEach(p=>{const a=p.ans[st.id];if(a&&a.detail)c[a.detail.poll]++});const tot=c.reduce((a,b)=>a+b,0);const mx=Math.max(1,...c);
  return `<div class="qcard card b">${qTile({q:st.q,tr:st.tr},null,'vote')}${st.o.map((o,k)=>`<div class="pollrow"><span class="pe">${st.ic[k]}</span><span class="pl"><b class="en">${esc(o)}</b><small>${esc(st.oa[k])}</small></span><div class="pbar"><i style="width:${c[k]*100/mx}%"></i></div><b class="pn">${c[k]}${tot?` · ${Math.round(c[k]*100/tot)}%`:''}</b></div>`).join('')}</div>`}
@@ -1198,28 +1229,39 @@ function buildPoll(el,st,done){
  el.innerHTML=`<div class="qcard card">${qTile({q:st.q,tr:st.tr},null,'vote')}<div class="opts mt">${st.o.map((o,k)=>`<button class="opt rise showar" style="--i:${k}" data-k="${k}"><span style="font-size:1.8rem">${st.ic[k]}</span><span class="en" style="flex:1">${esc(o)}<span class="oa">${esc(st.oa[k])}</span></span></button>`).join('')}</div></div>`;
  $$('.opt',el).forEach(b=>b.onclick=()=>{b.classList.add('right');$$('.opt',el).forEach(x=>x.disabled=true);setTimeout(()=>done({acc:1,detail:{poll:+b.dataset.k}}),500)})}
 // ---------- الوكيل (المعلم الافتراضي يدير الحصة) ----------
-const AGENT={on:false,running:false,
+const AGENT={on:false,running:false,gen:0,self:false,
  ui(){const b=$('#autob');if(b){b.classList.toggle('gold',this.on);b.innerHTML=this.on?'⏸ إيقاف الوكيل':'🤖 تشغيل الوكيل'}},
  toggle(){this.on?this.stop():this.start()},
- start(){if(!T.sid)return;this.on=true;GEM.unlock();this.ui();toast('🤖 الوكيل يدير الحصة الآن — اضغط «⏸ إيقاف الوكيل» متى شئت');if(!this.running)this.loop()},
- stop(){this.on=false;TTS.stop();this.ui()},
- async loop(){this.running=true;try{while(this.on){try{await this.tick()}catch(e){console.error(e);await sleep(1000)}}}finally{this.running=false}},
+ start(){if(!T.sid)return;this.on=true;this.gen++;GEM.unlock();this.ui();toast('🤖 الوكيل يدير الحصة الآن — اضغط «⏸ إيقاف الوكيل» متى شئت');if(!this.running)this.loop()},
+ stop(){this.on=false;this.gen++;TTS.stop();this.ui()},
+ // تدخّل المعلم يدويًا (التالي/السابق/النقر): الوكيل يكمل من المكان الجديد بدل ما يوقف
+ manual(){if(this.self)return;this.gen++},
+ act(f){this.self=true;try{f()}finally{this.self=false}},
+ async loop(){this.running=true;try{while(this.on){const g=this.gen;try{await this.tick(()=>this.on&&g===this.gen)}catch(e){console.error(e);await sleep(1000)}if(this.on&&g!==this.gen)await sleep(1200)}}finally{this.running=false}},
  intro(st){return st.type==='mcq'?2+(st.chart?1:0):99},
- async afterStep(){await sleep(560);await (NAR.pending||sleep(1600));if(!this.on)return;if(SPOT.cur)await SPOT.cur;await sleep(450)},
+ async afterStep(ok){await sleep(900);if(!ok())return;await (NAR.pending||sleep(1600));if(!ok())return;await sleep(300);if(SPOT.cur)await SPOT.cur;await sleep(700)},
  allDone(st){const j=Object.values(T.people).filter(p=>p.joined);return j.length>0&&j.every(p=>p.ans[st.id])},
- async tick(){const st=STAGES[T.stage];
-  if(T.step<T.nsteps&&!(EX.includes(st.type)&&T.step>=this.intro(st))){nextStep();await this.afterStep();return}
-  if(st.type==='break'){const end=T.start+st.dur*1000;while(this.on&&Date.now()<end)await sleep(300);if(this.on)await this.advance();return}
+ async tick(ok){const st=STAGES[T.stage];
+  if(T.step<T.nsteps&&!(EX.includes(st.type)&&T.step>=this.intro(st))){this.act(()=>nextStep());await this.afterStep(ok);return}
+  if(st.type==='break'){const end=T.start+st.dur*1000;await (NAR.pending||sleep(300));while(ok()&&(Date.now()<end||(GEM.audio&&!GEM.audio.paused)))await sleep(300);if(!ok())return;
+   await sleep(2500);if(!ok())return;await brkTop(st);if(ok())await this.advance();return}
   if(EX.includes(st.type)){
-   if(!T.go){startEx();await sleep(700);await (NAR.pending||sleep(300))}
-   const dl=T.goAt+st.solve*60000;while(this.on&&Date.now()<dl){if(this.allDone(st)&&Date.now()-T.goAt>15000)break;await sleep(1000)}
-   if(!this.on)return;
-   if(!T.reveal){T.reveal=true;T.step=T.nsteps;broadcast();teacherRender();await sleep(600);await speak(NARR_REV[st.id]);await sleep(1200)}
-   if(this.on)await this.advance();return}
+   if(!T.go){this.act(()=>startEx());await sleep(700);await (NAR.pending||sleep(300))}
+   if(!ok())return;
+   const dl=T.goAt+st.solve*60000;while(ok()&&Date.now()<dl){if(this.allDone(st)&&Date.now()-T.goAt>15000)break;await sleep(1000)}
+   if(!ok())return;
+   if(!T.reveal){T.reveal=true;T.step=T.nsteps;broadcast();teacherRender();await sleep(600);await speak(NARR_REV[st.id]);await sleep(1500)}
+   if(ok())await this.advance();return}
   if(st.type==='podium'){showBoard();await sleep(2500);this.stop();return}
-  await this.advance()},
- async advance(){if(T.stage>=STAGES.length-1){this.stop();return}goStage(T.stage+1);await sleep(900);await (NAR.pending||sleep(300));await sleep(300)}
+  await sleep(800);if(ok())await this.advance()},
+ async advance(){if(T.stage>=STAGES.length-1){this.stop();return}await sleep(800);this.act(()=>goStage(T.stage+1));await sleep(1200);await (NAR.pending||sleep(300));await sleep(500)}
 };
+// أكثر الطلاب التقاطًا في الفاصل
+async function brkTop(st){const rows=Object.values(T.people).map(p=>({p,a:p.ans[st.id]})).filter(x=>x.a&&x.a.detail).sort((a,b)=>b.a.detail.fun-a.a.detail.fun).slice(0,5);
+ const box=$('.brkt');if(!rows.length||!box)return;
+ box.insertAdjacentHTML('beforeend',`<div class="brktop pop"><b>🏆 أكثر الأبطال التقاطًا</b>${rows.map((x,i)=>`<div class="br"><span>${['🥇','🥈','🥉','4','5'][i]}</span><b>${esc(nameText(x.p.name))}</b><span class="en">${x.a.detail.fun}</span></div>`).join('')}</div>`);
+ const c=$('#brkc');if(c)c.style.display='none';
+ if(NAR.on){await speak(BRK_V[0]);if(LS.get('name_voice',true))await speak(nameText(rows[0].p.name));await speak(BRK_V[1])}else await sleep(3000);await sleep(2500)}
 // ---------- تعليق المعلم ----------
 const TC={on:false,was:false,
  toggle(){this.on=!this.on;if(this.on){this.was=AGENT.on;AGENT.stop();TTS.stop()}Net.send({t:'tc',sid:T.sid,on:this.on});
@@ -1252,7 +1294,7 @@ const SETUP=[['set_agent','🤖 المعلم الافتراضي (الوكيل) �
 function setupCard(live){return `<div class="card setupcard"><b>⚙️ خيارات الدرس ${live?'':'— اخترها قبل البدء'}</b>${SETUP.map(([k,t,d])=>`<label><input type="checkbox" data-set="${k}" ${(k==='set_agent'&&live?AGENT.on:k==='set_sim'&&live?SIM.on:LS.get(k,d))?'checked':''}> ${t}</label>`).join('')}<div class="muted" style="font-size:.85rem">تقدر تغيّرها أثناء الدرس من زر «⚙️ الخيارات» · زر «⏸ إيقاف مؤقت» يظهر دائمًا أسفل الشاشة (أو اضغط حرف P)</div></div>`}
 function bindSetup(live){$$('[data-set]').forEach(c=>c.onchange=()=>{const k=c.dataset.set;LS.set(k,c.checked);
  if(live){if(k==='set_agent'&&c.checked!==AGENT.on)AGENT.toggle();if(k==='set_sim'&&c.checked!==SIM.on)SIM.toggle();if(k==='nar_on'&&!c.checked)TTS.stop()}})}
-function setupApply(){setTimeout(()=>{if(LS.get('set_sim',false)&&!SIM.on)SIM.start();if(LS.get('set_agent',false)&&!AGENT.on)AGENT.start();teacherRender()},800)}
+function setupApply(){setTimeout(()=>{if(LS.get('set_sim',false)&&!SIM.on)SIM.start();if(LS.get('set_agent',false)&&!AGENT.on)AGENT.start();const sb=$('#simb');if(sb){sb.classList.toggle('gold',SIM.on);sb.innerHTML=SIM.on?'🧪 إيقاف التجربة':'🧪 طلاب افتراضيون'}},800)}
 function setupModal(){let o=$('#setmod');if(o){o.remove();return}o=h(`<div id="setmod" style="position:fixed;inset:0;z-index:9995;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center"><div style="max-width:520px;width:92%">${setupCard(true)}<div class="center mt"><button class="btn gold" id="setx">✔ تم</button></div></div></div>`);document.body.append(o);bindSetup(true);$('#setx').onclick=()=>{o.remove();teacherRender()};o.onclick=e=>{if(e.target===o){o.remove();teacherRender()}}}
 // ---------- إيقاف مؤقت / استئناف ----------
 const PAUSE={on:false,t0:0,wasAgent:false,
@@ -1267,6 +1309,17 @@ const PAUSE={on:false,t0:0,wasAgent:false,
 setInterval(()=>PAUSE.btn(),700);
 document.addEventListener('keydown',e=>{if(ROLE!=='teacher'||!T.sid)return;if(e.target&&/INPUT|TEXTAREA/.test(e.target.tagName))return;if(e.key==='p'||e.key==='P'||e.key==='ح'){e.preventDefault();PAUSE.toggle()}},true);
 LS.set('set_sim',false);
+
+// ---------- الاستماع للإعلان (صوت المتصفح الإنجليزي بأعلى جودة متاحة) ----------
+const LISTEN={
+ voice(){const vs=(TTS.voices||[]).filter(v=>/^en[-_](US|GB)/i.test(v.lang));for(const r of [/Natural/i,/Premium/i,/Enhanced/i,/Google US English/i,/Samantha/i,/Ava/i,/Aria/i,/Jenny/i]){const v=vs.find(v=>r.test(v.name));if(v)return v}return vs[0]},
+ el(id){const e=$(`.lscript[data-ad="${id}"]`);if(!e)return NAR.el('');e.dataset.br='1';e.dataset.lang='en';return e},
+ html(id){const t=LISTEN_TX[id];if(!t)return '';return `<div class="listen"><div class="lh">🎧 <b class="en">Listen first!</b> <span class="arx">استمع للإعلان أولًا</span><button class="btn sm lagain" data-la="${id}" title="إعادة الاستماع">🔁 استمع مرة ثانية</button></div><div class="lscript en" data-ad="${id}">${t.split(/\s+/).map(w=>`<span class="w">${esc(w)}</span>`).join(' ')}</div></div>`},
+ again(id){TTS.play([this.el(id)])}
+};
+document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-la]');if(b){e.stopPropagation();LISTEN.again(b.dataset.la)}},true);
+function modelBody(){return `<div class="slide modelad"><div class="hero3d b"><div class="en big2">✍️ Model Ad · ${esc(MODEL.product)}</div><span class="arx">مثال محلول — الكلمات المهمة باللون الأحمر</span></div>
+ ${MODEL.lines.map((l,i)=>`<div class="mline b ${i%2?'fr':'fl'}"><span class="mtag en">${esc(l.tag)}</span><div class="en mtx">${esc(l.en).replace(/\[\[(.+?)\]\]/g,'<b class="red">$1</b>')}</div><div class="arx">${esc(l.ar)}</div></div>`).join('')}</div>`}
 
 // ===================== صوت المعلم المستنسخ (Google Voice Replication) =====================
 const CLONE={
@@ -1396,7 +1449,7 @@ function applySteps(root,step,quiet){
  NAR.pending=null;
  if(!quiet&&shown.length&&NAR.on&&root.id==='tmain'){
   const tg=shown.length<=2?shown.filter(e=>e.dataset.n):[];
-  NAR.pending=new Promise(res=>setTimeout(()=>{if(tg.length){const p=TTS.play(tg.map(e=>NAR.el(e.dataset.n)));const tok=TTS.token;p.then(()=>{res();if(spotEl&&tok===TTS.token)SPOT.trigger(spotEl.dataset.spot);if(tok!==TTS.token||AGENT.on)return;if(NAR.auto)setTimeout(()=>NAR.next(),800);else BUILD.after(root,600)})}
+  NAR.pending=new Promise(res=>setTimeout(()=>{if(tg.length){const p=TTS.play(tg.flatMap(e=>e.dataset.listen?[NAR.el(e.dataset.n),NAR.el(LISTEN_V.intro),LISTEN.el(e.dataset.listen)]:[NAR.el(e.dataset.n)]));const tok=TTS.token;p.then(()=>{res();if(spotEl&&tok===TTS.token)SPOT.trigger(spotEl.dataset.spot);if(tok!==TTS.token||AGENT.on)return;if(NAR.auto)setTimeout(()=>NAR.next(),800);else BUILD.after(root,600)})}
    else{res();if(spotEl)SPOT.trigger(spotEl.dataset.spot);if(AGENT.on)return;if(NAR.auto)setTimeout(()=>NAR.next(),1500);else BUILD.after(root,BUILD.gap())}},450));return}
  if(spotEl)setTimeout(()=>SPOT.trigger(spotEl.dataset.spot),600);
  if(!quiet&&shown.length&&TTS.sel.auto){setTimeout(()=>TTS.play(shown.flatMap(e=>TTS.collect(e))),450)}
@@ -1405,13 +1458,14 @@ function applySteps(root,step,quiet){
 const countSteps=root=>$$('.b',root).length;
 function stageHead(st){return `<div class="stagehead b"><div class="ic">${GI(st.icon,64)}</div><div class="kicker en">${esc(st.kick)}</div><div class="plate"><h2 class="en say" data-lang="en" data-t="${esc(st.title.replace('…',''))}">${dropText(st.title,100)}</h2></div><div class="ar">${esc(st.ar)}</div></div>`}
 function slideBody(st){
+ if(st.id==='model')return modelBody();
  if(st.id==='goal')return `<div class="slide">
    <div class="hero3d b"><div class="goalbig en">${SAY(GOAL.en)}</div><span class="arx big">${esc(GOAL.ar)}</span></div>
    <div class="crit mt">${CRIT.map(([ic,e,a],i)=>`<div class="goal b ${i%2?'fr':'fl'}">${GI(ic,50)}<div class="t"><span class="qn en">Step ${i+1}</span><span class="en">${SAY(e)}</span><span class="arx">${esc(a)}</span></div></div>`).join('')}</div>
    <div class="techrow">${Object.values(TECH).map(([e,n,a],i)=>`<span class="tchip rise" style="--i:${i}">${e} <b class="en">${n}</b></span>`).join('')}</div>
   </div>`;
  if(st.ad){const A=ADS[st.ad];return `<div class="slide adslide">
-   <div class="adposter b fl" style="--a1:${A.bg[0]};--a2:${A.bg[1]}"><div class="adic">${A.ic}</div><div class="adtx"><div class="adname en">${esc(A.name)}</div><div class="adsub">${esc(A.ar)} · ص${A.page}</div></div><div class="adshine"></div></div>
+   <div class="b fl" data-listen="${st.ad}"><div class="adposter" style="--a1:${A.bg[0]};--a2:${A.bg[1]}"><div class="adic">${A.ic}</div><div class="adtx"><div class="adname en">${esc(A.name)}</div><div class="adsub">${esc(A.ar)} · ص${A.page}</div></div><div class="adshine"></div></div>${LISTEN.html(st.ad)}</div>
    <div class="tgrid">${A.quotes.map(([t,q],i)=>{const [e,n,a]=TECH[t];return `<div class="tech b ${i%2?'fr':'fl'}"><div class="th"><span class="tico">${e}</span><b class="en">${n}</b><span class="arx">${a}</span></div><div class="quote en">${SAY('“'+q+'”')}</div></div>`}).join('')}</div>
    <div class="vrow">${A.vocab.map(([w,d,a])=>`<div class="vcard b"><span class="vw en kw">${esc(w)}</span><span class="vd en">= ${esc(d)}</span><span class="arx">${esc(a)}</span></div>`).join('')}</div>
    <div class="spotcard b" data-spot="${st.ad}"><span class="spin">🎯</span><div><b class="en">Random Check!</b><div class="arx">سيتم اختيار طالب عشوائيًا من الكشف — جهّز إصبعك على «✋ موجود»</div></div></div>
@@ -1656,7 +1710,7 @@ function nextStage(){let i=S.stage+1;while(i<STAGES.length&&STAGES[i].type==='sl
 function nextBtn(){const i=nextStage();return i<0?'':`<button class="btn gold mt nxs" style="font-size:1.05rem">التمرين التالي ⬅ <span class="en">${esc(STAGES[i].title)}</span></button>`}
 function bindNext(root){const b=$('.nxs',root);if(b)b.onclick=()=>{const i=nextStage();if(i<0)return;S.stage=i;S.ahead=true;clap();setTimeout(renderStudent,300)}}
 function showDone(ex,r){
- if(r.detail&&r.detail.fun!=null){ex.innerHTML=`<div class="waiting card qcard pop"><div class="score-big">+${r.pts}</div><h3 class="en">Nice! ${r.detail.fun}/${r.detail.n} 🎉</h3><div class="arx">فاصل ممتع — ارجع للدرس الآن 👀</div></div>`;return}
+ if(r.detail&&r.detail.fun!=null){ex.innerHTML=`<div class="waiting card qcard pop"><div class="score-big">+${r.pts}</div><h3 class="en">Nice! ${r.detail.fun} ✨</h3><div class="arx">فاصل ممتع — ارجع للدرس الآن 👀</div></div>`;return}
  const pct=Math.round(r.acc*100);const msg=pct===100?['Perfect! 🌟','إتقان كامل!']:pct>=75?['Great job! 👏','أداء رائع']:pct>=50?['Good, keep going 💪','جيد، واصل التقدم']:['Keep trying 🌱','لا بأس، سنتقدم معًا'];
  ex.innerHTML=`<div class="waiting card qcard pop"><div class="muted">Points · نقاطك في هذه المرحلة</div><div class="score-big">+${r.pts}</div><div class="row" style="justify-content:center"><span class="pill">🎯 ${pct}%</span><span class="pill">⏱️ ${fmt(r.ms)}</span>${r.detail&&r.detail.tier?`<span class="pill">${TIERS[r.detail.tier].ar}</span>`:''}</div><h3 class="mt en">${msg[0]}</h3><div class="arx" style="font-size:1.1rem">${msg[1]}</div><p class="muted mt">يمكنك الانتقال للتمرين التالي الآن، أو انتظار المعلم.</p>${nextBtn()}</div>`;bindNext(ex);
 }
@@ -1753,7 +1807,7 @@ function drawTBody(still){
 }
 function setStep(n){const tm=$('#tmain');n=Math.max(1,Math.min(n,T.nsteps));if(n===T.step)return;T.step=n;applySteps(tm,n);updateStepUI();
  const last=$$('.b.on',tm).pop();if(last&&n>1)setTimeout(()=>last.scrollIntoView({behavior:'smooth',block:'center'}),60)}
-function nextStep(){if(PAUSE.on){toast('⏸ الدرس متوقف — اضغط «▶ استئناف الدرس»');return}if(SPOT.busy){toast('🎯 انتظر انتهاء الاختيار العشوائي (أو اضغط ⏭ تخطي)');return}if(T.step<T.nsteps)setStep(T.step+1);else{const nb=$('#next');nb.classList.remove('nextpulse');void nb.offsetWidth;nb.classList.add('nextpulse');toast('انتهت عناصر هذه المرحلة — اضغط «التالي»')}}
+function nextStep(){AGENT.manual();if(PAUSE.on){toast('⏸ الدرس متوقف — اضغط «▶ استئناف الدرس»');return}if(SPOT.busy){toast('🎯 انتظر انتهاء الاختيار العشوائي (أو اضغط ⏭ تخطي)');return}if(T.step<T.nsteps)setStep(T.step+1);else{const nb=$('#next');nb.classList.remove('nextpulse');void nb.offsetWidth;nb.classList.add('nextpulse');toast('انتهت عناصر هذه المرحلة — اضغط «التالي»')}}
 function updateStepUI(){const c=$('#stepc');if(c)c.textContent=T.step+'/'+T.nsteps;const hnt=$('#taphint');if(hnt)hnt.style.visibility=T.step<T.nsteps?'visible':'hidden'}
 document.addEventListener('keydown',e=>{
  if(!T.sid||!$('#tmain')||e.target.closest('input,textarea,select'))return;
@@ -1767,7 +1821,7 @@ setInterval(()=>{const c=$('#brkc');if(!c||ROLE!=='teacher')return;const st=STAG
 function tick(){const st=STAGES[T.stage];const el=$('#tm');if(!el)return;
  if(EX.includes(st.type)&&T.go){const tot=st.solve*60000,el2=Date.now()-T.goAt,left=tot-el2;el.innerHTML=left>0?`⏳ ${fmt(left)}<small> متبقي</small>`:`⏰ انتهى +${fmt(-left)}`;el.className='timer big '+(left<=0?'over':left<20000?'low':'run');const x=$('#exclock');if(x)x.innerHTML=`<div class="exc ${left<=0?'over':left<20000?'low':''}"><span>منذ البدء</span><b class="en">${fmt(el2)}</b><span>المتبقي</span><b class="en">${left>0?fmt(left):'0:00'}</b><i style="width:${Math.max(0,Math.min(100,left/tot*100))}%"></i></div>`;return}
  const lim=(EX.includes(st.type)?st.talk:st.min)*60000;const left=lim-(Date.now()-T.start);el.textContent=(EX.includes(st.type)?'🗣️ ':'')+(left<0?'+':'')+fmt(Math.abs(left));el.className='timer'+(left<20000?' low':'')}
-function goStage(i){if(i<0||i>=STAGES.length)return;$('#scroller').scrollTo({top:0});TTS.stop();Pen.cv&&Pen.clear();T.stage=i;T.step=1;T.reveal=false;T.go=false;T.goAt=0;T.start=Date.now();clap();broadcast();setTimeout(teacherRender,280)}
+function goStage(i){if(i<0||i>=STAGES.length)return;AGENT.manual();$('#scroller').scrollTo({top:0});TTS.stop();Pen.cv&&Pen.clear();T.stage=i;T.step=1;T.reveal=false;T.go=false;T.goAt=0;T.start=Date.now();clap();broadcast();setTimeout(teacherRender,280)}
 function updateLive(){
  const st=STAGES[T.stage];const el=$('#live');if(!el)return;
  const joined=rosterPeople().filter(x=>x.p&&x.p.joined).length;

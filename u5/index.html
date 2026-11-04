@@ -1222,6 +1222,7 @@ const SPOT={cur:null,busy:false,picked:new Set(),w:null,skip:false,
   while(t<2600&&!this.skip){el.textContent=pick(all);el.classList.remove('tick');void el.offsetWidth;el.classList.add('tick');await sleep(d);t+=d;d=Math.min(320,d*1.13)}
   el.textContent=win;el.classList.add('win');$('#wsub').textContent='';clap();confetti(60)},
  async ask(p,qid,Q){
+  await audioIdle(null,20000);
   const present=Object.values(T.people).filter(x=>x.joined).map(x=>nameText(x.name));
   speak(pick(SPOTV.call));await this.wheel(present,nameText(p.name));if(this.skip)return 'skip';
   // الخيارات بترتيب عشوائي
@@ -1279,7 +1280,7 @@ const AGENT={on:false,running:false,gen:0,self:false,
  async tick(ok){const st=STAGES[T.stage];
   if(T.step<T.nsteps&&!(EX.includes(st.type)&&T.step>=this.intro(st))){this.act(()=>nextStep());await this.afterStep(ok);return}
   if(st.type==='break'){const end=T.start+st.dur*1000;await (NAR.pending||sleep(300));while(ok()&&(Date.now()<end||(GEM.audio&&!GEM.audio.paused)))await sleep(300);if(!ok())return;
-   await sleep(2500);if(!ok())return;await brkTop(st);if(ok())await this.advance();return}
+   await sleep(2500);await audioIdle(ok);if(!ok())return;await brkTop(st);if(ok())await this.advance();return}
   if(EX.includes(st.type)){
    if(!T.go){await audioIdle(ok);this.act(()=>startEx());await sleep(700);await (NAR.pending||sleep(300));await audioIdle(ok)}
    if(!ok())return;
@@ -1748,7 +1749,7 @@ function renderStudent(){
  const ex=$('#ex');const key=S.sid+':'+S.me.id+':'+st.id;
  if(st.type==='slide'){ex.innerHTML=slideBody(st)+`<div class="center mt">${nextBtn()}</div>`;bindNext(ex);applySteps(main,S.step);return}
  if(st.type==='podium'){ex.innerHTML=`<div class="waiting b"><div class="score-big pop">${myTotal()}</div><h3 class="en">Your total points</h3><p class="muted">مجموع نقاطك — شاهد شاشة المعلم لمعرفة نجوم الحصة 🏆</p></div>`;applySteps(main,S.step);confetti();return}
- ex.className='b';
+ ex.className=st.type==='break'?'':'b';
  if(S.done[key]){showDone(ex,S.done[key]);applySteps(main,S.step);return}
  if(S.goStage!==S.stage&&st.type!=='break'){ex.innerHTML=`<div class="waitgo card qcard"><div class="lockic">🔒</div><h3 class="en">Wait for your teacher…</h3><p>انتظر حتى يضغط المعلم «ابدأ الحل»، ثم يبدأ العدّاد.</p><div class="dotsw"><i></i><i></i><i></i></div></div>`;applySteps(main,S.step);return}
  let t0=null;ex.addEventListener('shown',()=>{t0=performance.now()},{once:true});

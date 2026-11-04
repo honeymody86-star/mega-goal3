@@ -529,6 +529,11 @@ body{background:#fff;color:var(--ink)}
 .mtx{font-size:1.45rem;direction:ltr;text-align:left;font-weight:600}.red{color:#e11d48;text-decoration:underline 3px rgba(225,29,72,.35)}
 .brktop{margin-top:16px;background:rgba(255,255,255,.92);color:#1e1b4b;border-radius:20px;padding:14px 18px;min-width:300px}
 .brktop .br{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:6px 0;font-size:1.2rem;border-bottom:1px solid rgba(0,0,0,.06)}
+#lobby{position:fixed;inset:0;z-index:9992;background:rgba(8,6,20,.86);display:flex;align-items:center;justify-content:center;padding:16px}
+#lobby .lbox{background:var(--card,#1d1a2b);color:var(--ink,#fff);border-radius:26px;padding:26px;max-width:820px;width:100%;text-align:center;max-height:92vh;overflow:auto}
+#lobby .lcount{font-size:1.3rem;margin:14px 0}#lobby .lcount b{font-size:3rem;color:#2ee59d;font-family:Poppins}
+#lobby .lnames{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-height:38vh;overflow:auto}
+#lobby .lname{background:rgba(46,229,157,.12);border:1px solid rgba(46,229,157,.4);padding:6px 12px;border-radius:999px;font-size:.95rem}
 </style>
 </head>
 <body>
@@ -783,13 +788,21 @@ const Net={
    if(typeof EventSource==='undefined')poll();else open();
  },
  async start(sec){this.sec=sec;await this.history();this.connect()},
+ q:[],busy:false,fails:0,
+ async pump(){if(this.busy)return;this.busy=true;
+  try{while(this.q.length){const obj=this.q[0];let ok=false,wait=0;
+   try{const r=await fetch(`${RELAY}/${this.topic()}`,{method:'POST',body:JSON.stringify(obj)});
+    if(r.ok){ok=true}else if(r.status===429){wait=Math.min(30000,5000*(++this.fails));this.setOk(false);if(ROLE==='teacher'&&!this.warned){this.warned=1;toast('⏳ خادم المزامنة مزدحم — الرسائل محفوظة وتنرسل تلقائيًا بعد ثواني')}}
+    else wait=2500}catch(e){wait=Math.min(20000,2500*(++this.fails))}
+   if(ok){this.q.shift();const had=this.fails>0;this.fails=0;this.setOk(true);if(had&&ROLE==='teacher'&&T.sid&&obj.t!=='ctl')setTimeout(()=>broadcast(),300);await new Promise(r=>setTimeout(r,250))}
+   else{obj._tries=(obj._tries||0)+1;if(obj._tries>40){this.q.shift();continue}await new Promise(r=>setTimeout(r,wait))}}}
+  finally{this.busy=false}},
  send(obj){
    if(typeof SIM!=='undefined')SIM.onSend(obj);
    obj.uid=rnd()+rnd();obj.ts=Date.now();this.seen.add(obj.uid);
    try{this.bc&&this.bc.postMessage(obj)}catch(e){}
    const body=JSON.stringify(obj);
-   const tryPost=(n)=>fetch(`${RELAY}/${this.topic()}`,{method:'POST',body}).then(r=>{if(r.status===429){this.limited=true;this.setOk(false);if(ROLE==='teacher'&&!this.warned){this.warned=1;toast('⚠️ خادم المزامنة رفض بعض رسائل المعلم مؤقتًا — الطلاب يكملون بأنفسهم بزر «التمرين التالي»')}return}if(!r.ok)throw r.status;this.setOk(true)}).catch(()=>{if(n>0)setTimeout(()=>tryPost(n-1),2500);else this.setOk(false)});
-   tryPost(3);
+   if(obj.t==='ctl')this.q=(this.q||[]).filter(x=>x.t!=='ctl');(this.q=this.q||[]).push(obj);this.pump();
    this.handlers.forEach(f=>{try{f(obj,true)}catch(e){}});
  }
 };
@@ -988,7 +1001,7 @@ const GEM={
   return {blob:this.zip(files),n:man.length,total:items.length}},
  // يجمع كل نصوص الدرس (الإنجليزي والعربي) لتجهيزها مسبقًا
  lessonTexts(){const box=h('<div style="position:absolute;left:-99999px;top:0;width:900px"></div>');document.body.append(box);const out=[],seen=new Set();
-  const addN=t=>{if(t&&!seen.has('nar|'+t)){seen.add('nar|'+t);out.push([t,'nar'])}};Object.values(SPOTV).flat().forEach(addN);Object.values(SPOT_FB).forEach(f=>{addN(f.ok);addN(f.no)});addN(LISTEN_V.intro);BRK_V.forEach(addN);if(LS.get('name_voice',true))Object.values(ROSTER).flat().forEach(n=>addN(nameText(n)));
+  const addN=t=>{if(t&&!seen.has('nar|'+t)){seen.add('nar|'+t);out.push([t,'nar'])}};Object.values(SPOTV).flat().forEach(addN);Object.values(SPOT_FB).forEach(f=>{addN(f.ok);addN(f.no)});addN(LISTEN_V.intro);BRK_V.forEach(addN);Object.values(LISTEN_TX).forEach(t=>{if(!seen.has('en|'+t)){seen.add('en|'+t);out.push([t,'en'])}});if(LS.get('name_voice',true))Object.values(ROSTER).flat().forEach(n=>addN(nameText(n)));
   STAGES.forEach(st=>{let html=stageHead(st)+introExtra(st);try{html+=st.type==='slide'?slideBody(st):st.type==='podium'?'':previewEx(st,false,[])}catch(e){}
    box.innerHTML=html;narrAssign(box,st);$$('[data-n]',box).forEach(e=>{const t=e.dataset.n;if(!seen.has('nar|'+t)){seen.add('nar|'+t);out.push([t,'nar'])}});
    [NARR_GO[st.id],NARR_REV[st.id]].forEach(t=>{if(t&&!seen.has('nar|'+t)){seen.add('nar|'+t);out.push([t,'nar'])}});
@@ -996,7 +1009,7 @@ const GEM={
   box.remove();return out},
  async prepare(onp){
   // عند تفعيل الشرح: نجهّز مقاطع الشرح فقط (قراءة الجمل الإنجليزية تُطلب عند الحاجة) لتقليل عدد الطلبات
-  let items=this.lessonTexts();if(NAR.on)items=items.filter(x=>x[1]==='nar');
+  let items=this.lessonTexts();if(NAR.on){const LS5=new Set(Object.values(LISTEN_TX));items=items.filter(x=>x[1]==='nar'||LS5.has(x[0]))}
   items.sort((a,b)=>(a[1]==='nar'?0:1)-(b[1]==='nar'?0:1));
   let ok=0,i=0;const wait=ms=>new Promise(r=>setTimeout(r,ms));
   for(const [t,l] of items){i++;let tries=0;
@@ -1191,9 +1204,9 @@ const SPOT={cur:null,busy:false,picked:new Set(),w:null,skip:false,
   speak(pick(SPOTV.call));await this.wheel(present,nameText(p.name));if(this.skip)return 'skip';
   // الخيارات بترتيب عشوائي
   const perm=shuffle(Q.o.map((_,i)=>i));const opts=perm.map(i=>Q.o[i]);const right=perm.indexOf(Q.a);const sec=12;
-  const hereP=this.waitFor('here',p.id,7000);
-  Net.send({t:'spot',sid:T.sid,ph:'call',id:p.id,name:p.name,qid,until:Date.now()+6000});
-  this.ov(`<div class="spkt en">🎯 Random Check</div><div class="wname win">${esc(nameText(p.name))}</div><div class="spwait"><div class="ring" style="--d:6s"></div><b>✋ بانتظار ضغط «موجود»…</b></div>`);
+  const hereP=this.waitFor('here',p.id,13500);
+  Net.send({t:'spot',sid:T.sid,ph:'call',id:p.id,name:p.name,qid,until:Date.now()+12000});
+  this.ov(`<div class="spkt en">🎯 Random Check</div><div class="wname win">${esc(nameText(p.name))}</div><div class="spwait"><div class="ring" style="--d:12s"></div><b>✋ بانتظار ضغط «موجود»…</b></div>`);
   if(LS.get('name_voice',true))await speak(nameText(p.name));const hp=speak(SPOTV.here[0]);
   const here=await hereP;await hp;if(this.skip)return 'skip';
   if(!here){const rec={t:'spotres',sid:T.sid,id:p.id,name:p.name,qid,here:false,ok:false,pts:0,ts:Date.now()};Net.send(rec);T.log.push(rec);applyMsg(rec);scheduleUpdate();
@@ -1280,8 +1293,8 @@ function studentSpot(m){if(!S.me||m.sid!==S.sid)return;const me=m.id===S.me.id;
  if(m.t==='tc'){let b=$('#tcban');if(m.on){if(!b){b=h('<div id="tcban" class="st">🎙️ المعلم يتحدث الآن — انتبه للشرح</div>');document.body.append(b)}}else b&&b.remove();return}
  if(m.t==='spot'&&m.ph==='call'){if(!me){sban(`🎯 تم اختيار: <b>${esc(nameText(m.name))}</b>`);return}
   clap();try{navigator.vibrate&&navigator.vibrate([200,100,200])}catch(e){}
-  const o=sov(`<div class="spkt en">🎯 You’ve been picked!</div><div class="arx">تم اختيارك! اضغط بسرعة</div><button class="herebtn" id="hb">✋ موجود</button><div class="cdn" id="cdn">5</div>`,'me');
-  let n=5;const iv=setInterval(()=>{n--;const c=$('#cdn');if(c)c.textContent=Math.max(0,n);if(n<=0){clearInterval(iv);if(!o._ok){$('#hb')&&($('#hb').disabled=true);sovClose(800)}}},1000);
+  const o=sov(`<div class="spkt en">🎯 You’ve been picked!</div><div class="arx">تم اختيارك! اضغط بسرعة</div><button class="herebtn" id="hb">✋ موجود</button><div class="cdn" id="cdn">12</div>`,'me');
+  let n=12;const iv=setInterval(()=>{n--;const c=$('#cdn');if(c)c.textContent=Math.max(0,n);if(n<=0){clearInterval(iv);if(!o._ok){$('#hb')&&($('#hb').disabled=true);sovClose(800)}}},1000);
   $('#hb').onclick=()=>{o._ok=1;clearInterval(iv);Net.send({t:'here',sid:S.sid,id:S.me.id,name:S.me.name,qid:m.qid});sov(`<div class="spkt">✅ تمام!</div><div class="arx">استعد… السؤال قادم</div>`,'me')};return}
  if(m.t==='spot'&&m.ph==='ask'){if(!me){sban(`✍️ <b>${esc(nameText(m.name))}</b> يجاوب الآن…`);return}
   const t0=performance.now();let sent=false;
@@ -1297,7 +1310,7 @@ const SETUP=[['set_agent','🤖 المعلم الافتراضي (الوكيل) �
 function setupCard(live){return `<div class="card setupcard"><b>⚙️ خيارات الدرس ${live?'':'— اخترها قبل البدء'}</b>${SETUP.map(([k,t,d])=>`<label><input type="checkbox" data-set="${k}" ${(k==='set_agent'&&live?AGENT.on:k==='set_sim'&&live?SIM.on:LS.get(k,d))?'checked':''}> ${t}</label>`).join('')}<div class="muted" style="font-size:.85rem">تقدر تغيّرها أثناء الدرس من زر «⚙️ الخيارات» · زر «⏸ إيقاف مؤقت» يظهر دائمًا أسفل الشاشة (أو اضغط حرف P)</div></div>`}
 function bindSetup(live){$$('[data-set]').forEach(c=>c.onchange=()=>{const k=c.dataset.set;LS.set(k,c.checked);
  if(live){if(k==='set_agent'&&c.checked!==AGENT.on)AGENT.toggle();if(k==='set_sim'&&c.checked!==SIM.on)SIM.toggle();if(k==='nar_on'&&!c.checked)TTS.stop()}})}
-function setupApply(){setTimeout(()=>LISTEN.warm(),1500);setTimeout(()=>{if(LS.get('set_sim',false)&&!SIM.on)SIM.start();if(LS.get('set_agent',false)&&!AGENT.on)AGENT.start();const sb=$('#simb');if(sb){sb.classList.toggle('gold',SIM.on);sb.innerHTML=SIM.on?'🧪 إيقاف التجربة':'🧪 طلاب افتراضيون'}},800)}
+function setupApply(){setTimeout(()=>LISTEN.warm(),1500);setTimeout(()=>{if(LS.get('set_sim',false)&&!SIM.on)SIM.start();if(T.lobby)LOBBY.show();else if(LS.get('set_agent',false)&&!AGENT.on)AGENT.start();const sb=$('#simb');if(sb){sb.classList.toggle('gold',SIM.on);sb.innerHTML=SIM.on?'🧪 إيقاف التجربة':'🧪 طلاب افتراضيون'}},800)}
 function setupModal(){let o=$('#setmod');if(o){o.remove();return}o=h(`<div id="setmod" style="position:fixed;inset:0;z-index:9995;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center"><div style="max-width:520px;width:92%">${setupCard(true)}<div class="center mt"><button class="btn gold" id="setx">✔ تم</button></div></div></div>`);document.body.append(o);bindSetup(true);$('#setx').onclick=()=>{o.remove();teacherRender()};o.onclick=e=>{if(e.target===o){o.remove();teacherRender()}}}
 // ---------- إيقاف مؤقت / استئناف ----------
 const PAUSE={on:false,t0:0,wasAgent:false,
@@ -1325,6 +1338,19 @@ const LISTEN={
 document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-la]');if(b){e.stopPropagation();LISTEN.again(b.dataset.la)}},true);
 function modelBody(){return `<div class="slide modelad"><div class="hero3d b"><div class="en big2">✍️ Model Ad · ${esc(MODEL.product)}</div><span class="arx">مثال محلول — الكلمات المهمة باللون الأحمر</span></div>
  ${MODEL.lines.map((l,i)=>`<div class="mline b ${i%2?'fr':'fl'}"><span class="mtag en">${esc(l.tag)}</span><div class="en mtx">${esc(l.en).replace(/\[\[(.+?)\]\]/g,'<b class="red">$1</b>')}</div><div class="arx">${esc(l.ar)}</div></div>`).join('')}</div>`}
+
+// ---------- صالة الانتظار ----------
+const LOBBY={iv:0,
+ show(){let o=$('#lobby');if(!o){o=h('<div id="lobby"></div>');document.body.append(o)}this.draw();clearInterval(this.iv);this.iv=setInterval(()=>this.draw(),1000)},
+ draw(){const o=$('#lobby');if(!o)return;const ppl=rosterPeople();const j=ppl.filter(x=>x.p&&x.p.joined);
+  o.innerHTML=`<div class="lbox pop"><div class="spkt en">🚪 Waiting Room</div><h2>صالة الانتظار — الشعبة ${T.sec}</h2><p class="muted">الدرس ما يبدأ إلا لما تضغط «ابدأ الدرس». تأكد إن الطلاب فتحوا الرابط ودخلوا بأسمائهم.</p>
+  <div class="lcount"><b>${j.length}</b> / ${ppl.length} <span>طالب دخل</span></div>
+  <div class="lnames">${j.map(x=>`<span class="lname">✅ ${esc(nameText(x.p.name))}</span>`).join('')||'<span class="muted">بانتظار أول طالب…</span>'}</div>
+  <div class="row mt" style="justify-content:center;gap:10px;flex-wrap:wrap"><button class="btn gold glow" id="lstart" style="font-size:1.2rem;padding:14px 28px">▶ ابدأ الدرس ${LS.get('set_agent',false)?'(مع المعلم الافتراضي)':''}</button><button class="btn sm ghost" id="lopt">⚙️ الخيارات</button></div></div>`;
+  $('#lstart').onclick=()=>this.start();$('#lopt').onclick=()=>setupModal()},
+ start(){clearInterval(this.iv);const o=$('#lobby');o&&o.remove();GEM.unlock&&GEM.unlock();T.lobby=false;T.start=Date.now();T.narKey=null;broadcast();teacherRender();
+  if(LS.get('set_agent',false)&&!AGENT.on)setTimeout(()=>AGENT.start(),600)}
+};
 
 // ===================== صوت المعلم المستنسخ (Google Voice Replication) =====================
 const CLONE={
@@ -1452,6 +1478,7 @@ function applySteps(root,step,quiet){
  $$('.gch.cur',root).forEach(e=>e.classList.remove('cur'));{const ons=$$('.b.on',root);const lb=ons[ons.length-1];if(lb&&lb.classList.contains('gch'))lb.classList.add('cur')}
  const spotEl=(!quiet&&root.id==='tmain'&&ROLE==='teacher')?shown.find(e=>e.classList.contains('spotcard')):null;
  if(!quiet)NAR.pending=null;
+ if(T.lobby&&ROLE==='teacher')quiet=true;
  if(!quiet&&root.id==='tmain'&&ROLE==='teacher')T.narKey=T.stage+'.'+step;
  if(!quiet&&shown.length&&NAR.on&&root.id==='tmain'){
   const tg=shown.length<=2?shown.filter(e=>e.dataset.n):[];
@@ -1674,12 +1701,14 @@ function pickName(){
 }
 function choose(me){S.me=me;LS.set('me',me);clap();Net.send({t:'join',sid:S.sid,id:me.id,name:me.name,extra:!!me.extra});setTimeout(renderStudent,350)}
 async function studentConnect(){Net.handlers=[];Net.on(studentMsg);await Net.start(S.sec);Net.send({t:'hello'});if(S.me)Net.send({t:'join',sid:S.sid,id:S.me.id,name:S.me.name,extra:!!S.me.extra});renderStudent()}
+setInterval(()=>{if(ROLE==='student'&&S.me&&S.sec&&Date.now()-(S.lastMsg||Date.now())>40000){S.lastMsg=Date.now();Net.send({t:'hello'})}},5000);
 function studentMsg(m,mine){
+ if(!mine)S.lastMsg=Date.now();
  if(m.t==='spot'||m.t==='spotres'||m.t==='tc'||m.t==='pause'){if(!mine)studentSpot(m);return}
  if(m.t==='join'&&!mine){S.joins.push(m);S.redrawNames&&!S.me&&S.redrawNames()}
  if(m.t==='ctl'){
   const newSid=m.sid!==S.sid;if(!newSid&&m.stage<S.stage&&S.ahead)return;if(m.stage>=S.stage)S.ahead=false;
-  const wasGo=S.goStage===S.stage;const changed=newSid||m.stage!==S.stage;
+  const wasGo=S.goStage===S.stage;const lobbyCh=!!m.lobby!==!!S.lobby;S.lobby=!!m.lobby;const changed=newSid||m.stage!==S.stage||lobbyCh;
   S.sid=m.sid;S.stage=m.stage;S.step=99;S.goStage=m.go?m.stage:-1;S.goAt=m.goAt||0;
   if(newSid&&S.me)Net.send({t:'join',sid:S.sid,id:S.me.id,name:S.me.name,extra:!!S.me.extra});
   if(!S.me)return;
@@ -1688,6 +1717,7 @@ function studentMsg(m,mine){
 }
 function myTotal(){return Object.entries(S.done).filter(([k])=>k.startsWith(S.sid+':'+S.me.id+':')).reduce((a,[,v])=>a+v.pts,0)}
 function renderStudent(){
+ if(S.lobby){$('#app').innerHTML=`<div class='wrap'><div class='lock card pop center' style='margin-top:12vh'><div style='font-size:3.5rem'>✅</div><h2>أهلًا ${esc(S.me.name.split(' ')[0])}! أنت داخل الدرس</h2><p class='muted mt'>انتظر شوي… المعلم بيبدأ الدرس بعد ما يدخل الجميع</p><div class='reel mt'></div></div></div>`;return}
  const st=STAGES[S.stage];
  $('#app').innerHTML=`<div class="top"><div class="brand">${GI('tv',36)}<div><div style="font-size:.95rem">${esc(S.me.name)}</div><div class="muted" style="font-size:.75rem;font-weight:600">الشعبة ${S.sec} · <span id="mypts">${myTotal()}</span> نقطة</div></div></div><span class="grow"></span>${st?`<span class="pill">${S.stage+1}/${STAGES.length}</span>`:''}<span class="net ${Net.ok?'ok':''}"></span><button class="btn sm ghost fsb" title="ملء الشاشة">⛶</button><button class="btn sm ghost" id="ttsb" title="القراءة الصوتية التلقائية">${TTS.sel.auto?'🔊':'🔇'}</button><button class="btn sm ghost" id="lo" title="تغيير الاسم">⎋</button></div><div class="prog"><i style="width:${S.stage<0?0:(S.stage+1)*100/STAGES.length}%"></i></div><div class="wrap" id="main"></div>`;
  $('#lo').onclick=()=>{if(confirm('تسجيل الخروج وتغيير الاسم؟')){LS.set('me',null);location.reload()}};
@@ -1747,8 +1777,8 @@ function teacherSections(){
   }else newSession();
  });
 }
-function newSession(){T.sid=new Date().toISOString().slice(0,10)+'-'+rnd().slice(0,5);T.stage=0;T.step=1;T.reveal=false;T.go=false;T.goAt=0;T.start=Date.now();replay();clap();teacherRender();broadcast();setupApply()}
-function broadcast(){Net.send({t:'ctl',sid:T.sid,stage:T.stage,step:T.step,start:T.start,reveal:T.reveal,go:T.go,goAt:T.goAt})}
+function newSession(){T.lobby=true;T.sid=new Date().toISOString().slice(0,10)+'-'+rnd().slice(0,5);T.stage=0;T.step=1;T.reveal=false;T.go=false;T.goAt=0;T.start=Date.now();replay();clap();teacherRender();broadcast();setupApply()}
+function broadcast(){Net.send({t:'ctl',lobby:T.lobby?1:0,sid:T.sid,stage:T.stage,step:T.step,start:T.start,reveal:T.reveal,go:T.go,goAt:T.goAt})}
 function startEx(){const st=STAGES[T.stage];if(!EX.includes(st.type)||T.go)return;T.go=true;T.goAt=Date.now();broadcast();setStep(T.nsteps);clap();toast('▶ بدأ الحل — العدّاد يعمل الآن');setTimeout(()=>NAR.say(NARR_GO[st.id]),550);updateLive();tick();const g=$('#gob');if(g)g.remove()}
 let bT;function broadcastSoon(){clearTimeout(bT);bT=setTimeout(broadcast,350)}
 function person(id,name){return T.people[id]||(T.people[id]={id,name,joined:0,ans:{}})}

@@ -529,10 +529,10 @@ body{background:#fff;color:var(--ink)}
 .mtx{font-size:1.45rem;direction:ltr;text-align:left;font-weight:600}.red{color:#e11d48;text-decoration:underline 3px rgba(225,29,72,.35)}
 .brktop{margin-top:16px;background:rgba(255,255,255,.92);color:#1e1b4b;border-radius:20px;padding:14px 18px;min-width:300px}
 .brktop .br{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:6px 0;font-size:1.2rem;border-bottom:1px solid rgba(0,0,0,.06)}
-#lobby{position:fixed;inset:0;z-index:9992;background:rgba(8,6,20,.86);display:flex;align-items:center;justify-content:center;padding:16px}
-#lobby .lbox{background:var(--card,#1d1a2b);color:var(--ink,#fff);border-radius:26px;padding:26px;max-width:820px;width:100%;text-align:center;max-height:92vh;overflow:auto}
-#lobby .lcount{font-size:1.3rem;margin:14px 0}#lobby .lcount b{font-size:3rem;color:#2ee59d;font-family:Poppins}
-#lobby .lnames{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-height:38vh;overflow:auto}
+#lobby.lbar{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);z-index:9989;display:flex;align-items:center;gap:14px;background:var(--card,#1d1a2b);color:var(--ink,#fff);border:2px solid #2ee59d;border-radius:20px;padding:10px 14px;box-shadow:0 10px 30px rgba(0,0,0,.4);max-width:min(900px,calc(100% - 200px))}
+#lobby .lc{white-space:nowrap}#lobby .lc b{font-size:1.8rem;color:#2ee59d;font-family:Poppins;margin-inline-end:4px}
+#lobby .lnm{font-size:.85rem;opacity:.85;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;max-width:46vw}
+#lobby #lgo{font-size:1.15rem;padding:10px 22px;white-space:nowrap}
 #lobby .lname{background:rgba(46,229,157,.12);border:1px solid rgba(46,229,157,.4);padding:6px 12px;border-radius:999px;font-size:.95rem}
 #pauseov.tb{inset:auto;bottom:0;top:auto;left:0;right:0;padding-left:200px !important;height:auto;background:#f59e0b;color:#1b1300;padding:8px 14px;font-weight:800;font-size:.95rem;pointer-events:none;z-index:9990;display:block;box-shadow:0 4px 14px rgba(0,0,0,.25)}
 #scroller>*:last-child{margin-bottom:2px}
@@ -1362,15 +1362,13 @@ function modelBody(){return `<div class="slide modelad"><div class="hero3d b"><d
  ${MODEL.lines.map((l,i)=>`<div class="mline b ${i%2?'fr':'fl'}"><span class="mtag en">${esc(l.tag)}</span><div class="en mtx">${esc(l.en).replace(/\[\[(.+?)\]\]/g,'<b class="red">$1</b>')}</div><div class="arx">${esc(l.ar)}</div></div>`).join('')}</div>`}
 
 // ---------- صالة الانتظار ----------
-const LOBBY={iv:0,
- show(){let o=$('#lobby');if(!o){o=h('<div id="lobby"></div>');document.body.append(o)}this.draw();clearInterval(this.iv);this.iv=setInterval(()=>this.draw(),1000)},
- draw(){const o=$('#lobby');if(!o)return;const ppl=rosterPeople();const j=ppl.filter(x=>x.p&&x.p.joined);
-  o.innerHTML=`<div class="lbox pop"><div class="spkt en">🚪 Waiting Room</div><h2>صالة الانتظار — الشعبة ${T.sec}</h2><p class="muted">الدرس ما يبدأ إلا لما تضغط «ابدأ الدرس». تأكد إن الطلاب فتحوا الرابط ودخلوا بأسمائهم.</p>
-  <div class="lcount"><b>${j.length}</b> / ${ppl.length} <span>طالب دخل</span></div>
-  <div class="lnames">${j.map(x=>`<span class="lname">✅ ${esc(nameText(x.p.name))}</span>`).join('')||'<span class="muted">بانتظار أول طالب…</span>'}</div>
-  <div class="row mt" style="justify-content:center;gap:10px;flex-wrap:wrap"><button class="btn gold glow" id="lstart" style="font-size:1.2rem;padding:14px 28px">▶ ابدأ الدرس ${LS.get('set_agent',false)?'(مع المعلم الافتراضي)':''}</button><button class="btn sm ghost" id="lopt">⚙️ الخيارات</button></div></div>`;
-  $('#lstart').onclick=()=>this.start();$('#lopt').onclick=()=>setupModal()},
- start(){clearInterval(this.iv);const o=$('#lobby');o&&o.remove();GEM.unlock&&GEM.unlock();T.lobby=false;T.start=Date.now();T.narKey=null;broadcast();teacherRender();
+const LOBBY={iv:0,last:'',
+ show(){let o=$('#lobby');if(!o){o=h(`<div id="lobby" class="lbar"><div class="lc"><b id="lbn">0</b><span id="lbt">/ 0 طالب دخل</span></div><div class="lnm" id="lbnames">بانتظار أول طالب…</div><button class="btn gold glow" id="lgo">🚀 انطلق</button></div>`);document.body.append(o);$('#lgo').onclick=()=>this.start()}
+  this.draw();clearInterval(this.iv);this.iv=setInterval(()=>this.draw(),1500)},
+ draw(){if(!$('#lobby'))return;const ppl=rosterPeople();const j=ppl.filter(x=>x.p&&x.p.joined);const key=j.length+'|'+ppl.length;if(key===this.last)return;this.last=key;
+  $('#lbn').textContent=j.length;$('#lbt').textContent=`/ ${ppl.length} طالب دخل`;
+  $('#lbnames').textContent=j.length?j.map(x=>nameText(x.p.name)).join(' · '):'بانتظار أول طالب…'},
+ start(){clearInterval(this.iv);this.last='';const o=$('#lobby');o&&o.remove();GEM.unlock&&GEM.unlock();T.lobby=false;T.start=Date.now();T.narKey=null;broadcast();teacherRender();
   if(LS.get('set_agent',false)&&!AGENT.on)setTimeout(()=>AGENT.start(),600)}
 };
 

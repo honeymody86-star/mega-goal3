@@ -1195,15 +1195,15 @@ const SPOT={cur:null,busy:false,picked:new Set(),w:null,skip:false,
   const hereP=this.waitFor('here',p.id,7000);
   Net.send({t:'spot',sid:T.sid,ph:'call',id:p.id,name:p.name,qid,until:Date.now()+6000});
   this.ov(`<div class="spkt en">🎯 Random Check</div><div class="wname win">${esc(nameText(p.name))}</div><div class="spwait"><div class="ring" style="--d:6s"></div><b>✋ بانتظار ضغط «موجود»…</b></div>`);
-  if(LS.get('name_voice',true))await speak(nameText(p.name));speak(SPOTV.here[0]);
-  const here=await hereP;if(this.skip)return 'skip';
+  if(LS.get('name_voice',true))await speak(nameText(p.name));const hp=speak(SPOTV.here[0]);
+  const here=await hereP;await hp;if(this.skip)return 'skip';
   if(!here){const rec={t:'spotres',sid:T.sid,id:p.id,name:p.name,qid,here:false,ok:false,pts:0,ts:Date.now()};Net.send(rec);T.log.push(rec);applyMsg(rec);scheduleUpdate();
    this.ov(`<div class="wname">${esc(nameText(p.name))}</div><div class="spres no">😴 لم يضغط «موجود»</div>`);await speak(pick(SPOTV.none));await sleep(600);return 'none'}
   const ansP=this.waitFor('spotans',p.id,sec*1000+1500);
   Net.send({t:'spot',sid:T.sid,ph:'ask',id:p.id,name:p.name,qid,q:Q.q,tr:Q.tr,o:opts,sec,until:Date.now()+sec*1000});
   this.ov(`<div class="spkt en">✍️ ${esc(nameText(p.name))} is answering…</div><div class="spq en">${SAY(Q.q)}</div><div class="qtr">${esc(Q.tr)}</div><div class="spopts">${opts.map((o,k)=>`<div class="spo en" data-k="${k}">${'ABC'[k]}. ${esc(o)}</div>`).join('')}</div><div class="cdbar"><i style="animation-duration:${sec}s"></i></div>`);
-  speak(SPOTV.ask[0]);
-  const ans=await ansP;if(this.skip)return 'skip';
+  const ap=speak(SPOTV.ask[0]);
+  const ans=await ansP;await ap;if(this.skip)return 'skip';
   const k=ans?ans.k:-1,ms=ans?ans.ms:sec*1000,ok=k===right;
   const pts=5+(ok?20+Math.round(10*Math.max(0,1-ms/(sec*1000))):0);
   const FB=SPOT_FB[qid]||{};const rec={t:'spotres',sid:T.sid,id:p.id,name:p.name,qid,here:true,ok,k,pts,ms,ans:opts[right],ex:FB.ex||'',ts:Date.now()};Net.send(rec);T.log.push(rec);applyMsg(rec);scheduleUpdate();
@@ -1240,14 +1240,14 @@ const AGENT={on:false,running:false,gen:0,self:false,
  act(f){this.self=true;try{f()}finally{this.self=false}},
  async loop(){this.running=true;try{while(this.on){const g=this.gen;try{await this.tick(()=>this.on&&g===this.gen)}catch(e){console.error(e);await sleep(1000)}if(this.on&&g!==this.gen)await sleep(1200)}}finally{this.running=false}},
  intro(st){return st.type==='mcq'?2+(st.chart?1:0):99},
- async afterStep(ok){await sleep(900);if(!ok())return;await (NAR.pending||sleep(1600));if(!ok())return;await sleep(300);if(SPOT.cur)await SPOT.cur;await sleep(700)},
+ async afterStep(ok){await sleep(900);if(!ok())return;await (NAR.pending||sleep(1600));await audioIdle(ok);if(!ok())return;await sleep(300);if(SPOT.cur)await SPOT.cur;await sleep(700)},
  allDone(st){const j=Object.values(T.people).filter(p=>p.joined);return j.length>0&&j.every(p=>p.ans[st.id])},
  async tick(ok){const st=STAGES[T.stage];
   if(T.step<T.nsteps&&!(EX.includes(st.type)&&T.step>=this.intro(st))){this.act(()=>nextStep());await this.afterStep(ok);return}
   if(st.type==='break'){const end=T.start+st.dur*1000;await (NAR.pending||sleep(300));while(ok()&&(Date.now()<end||(GEM.audio&&!GEM.audio.paused)))await sleep(300);if(!ok())return;
    await sleep(2500);if(!ok())return;await brkTop(st);if(ok())await this.advance();return}
   if(EX.includes(st.type)){
-   if(!T.go){this.act(()=>startEx());await sleep(700);await (NAR.pending||sleep(300))}
+   if(!T.go){await audioIdle(ok);this.act(()=>startEx());await sleep(700);await (NAR.pending||sleep(300));await audioIdle(ok)}
    if(!ok())return;
    const dl=T.goAt+st.solve*60000;while(ok()&&Date.now()<dl){if(this.allDone(st)&&Date.now()-T.goAt>15000)break;await sleep(1000)}
    if(!ok())return;
@@ -1255,9 +1255,12 @@ const AGENT={on:false,running:false,gen:0,self:false,
    if(ok())await this.advance();return}
   if(st.type==='podium'){showBoard();await sleep(2500);this.stop();return}
   await sleep(800);if(ok())await this.advance()},
- async advance(){if(T.stage>=STAGES.length-1){this.stop();return}await sleep(800);this.act(()=>goStage(T.stage+1));await sleep(1200);await (NAR.pending||sleep(300));await sleep(500)}
+ async advance(){if(T.stage>=STAGES.length-1){this.stop();return}await audioIdle(()=>this.on);await sleep(800);this.act(()=>goStage(T.stage+1));await sleep(1200);await (NAR.pending||sleep(300));await sleep(500)}
 };
 // أكثر الطلاب التقاطًا في الفاصل
+function audioBusy(){return !!((GEM.audio&&!GEM.audio.paused&&!GEM.audio.ended&&GEM.audio.currentTime>0)||(TTS.ok&&speechSynthesis.speaking)||document.querySelector('.speaking'))}
+async function audioIdle(ok,max=90000){const t0=Date.now();while(audioBusy()&&Date.now()-t0<max&&(!ok||ok()))await sleep(250)}
+function pollBars(st){const b=$('#tbody');if(!b)return;const tmp=document.createElement('div');tmp.innerHTML=pollPreview(st);const nr=$$('.pollrow',tmp),or=$$('.pollrow',b);if(nr.length!==or.length)return;or.forEach((r,i)=>{const ni=$('.pbar i',nr[i]),oi=$('.pbar i',r);if(ni&&oi)oi.style.width=ni.style.width;const nb=$('.pn',nr[i]),ob=$('.pn',r);if(nb&&ob)ob.innerHTML=nb.innerHTML})}
 async function brkTop(st){const rows=Object.values(T.people).map(p=>({p,a:p.ans[st.id]})).filter(x=>x.a&&x.a.detail).sort((a,b)=>b.a.detail.fun-a.a.detail.fun).slice(0,5);
  const box=$('.brkt');if(!rows.length||!box)return;
  box.insertAdjacentHTML('beforeend',`<div class="brktop pop"><b>🏆 أكثر الأبطال التقاطًا</b>${rows.map((x,i)=>`<div class="br"><span>${['🥇','🥈','🥉','4','5'][i]}</span><b>${esc(nameText(x.p.name))}</b><span class="en">${x.a.detail.fun}</span></div>`).join('')}</div>`);
@@ -1295,7 +1298,7 @@ const SETUP=[['set_agent','🤖 المعلم الافتراضي (الوكيل) �
 function setupCard(live){return `<div class="card setupcard"><b>⚙️ خيارات الدرس ${live?'':'— اخترها قبل البدء'}</b>${SETUP.map(([k,t,d])=>`<label><input type="checkbox" data-set="${k}" ${(k==='set_agent'&&live?AGENT.on:k==='set_sim'&&live?SIM.on:LS.get(k,d))?'checked':''}> ${t}</label>`).join('')}<div class="muted" style="font-size:.85rem">تقدر تغيّرها أثناء الدرس من زر «⚙️ الخيارات» · زر «⏸ إيقاف مؤقت» يظهر دائمًا أسفل الشاشة (أو اضغط حرف P)</div></div>`}
 function bindSetup(live){$$('[data-set]').forEach(c=>c.onchange=()=>{const k=c.dataset.set;LS.set(k,c.checked);
  if(live){if(k==='set_agent'&&c.checked!==AGENT.on)AGENT.toggle();if(k==='set_sim'&&c.checked!==SIM.on)SIM.toggle();if(k==='nar_on'&&!c.checked)TTS.stop()}})}
-function setupApply(){setTimeout(()=>{if(LS.get('set_sim',false)&&!SIM.on)SIM.start();if(LS.get('set_agent',false)&&!AGENT.on)AGENT.start();const sb=$('#simb');if(sb){sb.classList.toggle('gold',SIM.on);sb.innerHTML=SIM.on?'🧪 إيقاف التجربة':'🧪 طلاب افتراضيون'}},800)}
+function setupApply(){setTimeout(()=>LISTEN.warm(),1500);setTimeout(()=>{if(LS.get('set_sim',false)&&!SIM.on)SIM.start();if(LS.get('set_agent',false)&&!AGENT.on)AGENT.start();const sb=$('#simb');if(sb){sb.classList.toggle('gold',SIM.on);sb.innerHTML=SIM.on?'🧪 إيقاف التجربة':'🧪 طلاب افتراضيون'}},800)}
 function setupModal(){let o=$('#setmod');if(o){o.remove();return}o=h(`<div id="setmod" style="position:fixed;inset:0;z-index:9995;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center"><div style="max-width:520px;width:92%">${setupCard(true)}<div class="center mt"><button class="btn gold" id="setx">✔ تم</button></div></div></div>`);document.body.append(o);bindSetup(true);$('#setx').onclick=()=>{o.remove();teacherRender()};o.onclick=e=>{if(e.target===o){o.remove();teacherRender()}}}
 // ---------- إيقاف مؤقت / استئناف ----------
 const PAUSE={on:false,t0:0,wasAgent:false,
@@ -1314,7 +1317,9 @@ LS.set('set_sim',false);
 // ---------- الاستماع للإعلان (صوت المتصفح الإنجليزي بأعلى جودة متاحة) ----------
 const LISTEN={
  voice(){const vs=(TTS.voices||[]).filter(v=>/^en[-_](US|GB)/i.test(v.lang));for(const r of [/Natural/i,/Premium/i,/Enhanced/i,/Google US English/i,/Samantha/i,/Ava/i,/Aria/i,/Jenny/i]){const v=vs.find(v=>r.test(v.name));if(v)return v}return vs[0]},
- el(id){const e=$(`.lscript[data-ad="${id}"]`);if(!e)return NAR.el('');e.dataset.br='1';e.dataset.lang='en';return e},
+ el(id){const e=$(`.lscript[data-ad="${id}"]`);if(!e)return NAR.el('');e.dataset.lang='en';if(GEM.key)delete e.dataset.br;else e.dataset.br='1';return e},
+ async warm(){if(!GEM.key)return;const L=[...Object.values(LISTEN_TX).map(t=>[t,'en']),...[LISTEN_V.intro,...BRK_V,...NARR.model.filter(Boolean),...Object.values(SPOT_FB).flatMap(f=>[f.ok,f.no]),...Object.values(NARR_GO),...Object.values(NARR_REV)].filter(Boolean).map(t=>[t,'nar'])];
+  for(const [t,l] of L){try{await GEM.get(t,l)}catch(e){}await sleep(400)}},
  html(id){const t=LISTEN_TX[id];if(!t)return '';return `<div class="listen"><div class="lh">🎧 <b class="en">Listen first!</b> <span class="arx">استمع للإعلان أولًا</span><button class="btn sm lagain" data-la="${id}" title="إعادة الاستماع">🔁 استمع مرة ثانية</button></div><div class="lscript en" data-ad="${id}">${t.split(/\s+/).map(w=>`<span class="w">${esc(w)}</span>`).join(' ')}</div></div>`},
  again(id){TTS.play([this.el(id)])}
 };
@@ -1447,7 +1452,8 @@ function applySteps(root,step,quiet){
  });
  $$('.gch.cur',root).forEach(e=>e.classList.remove('cur'));{const ons=$$('.b.on',root);const lb=ons[ons.length-1];if(lb&&lb.classList.contains('gch'))lb.classList.add('cur')}
  const spotEl=(!quiet&&root.id==='tmain'&&ROLE==='teacher')?shown.find(e=>e.classList.contains('spotcard')):null;
- NAR.pending=null;
+ if(!quiet)NAR.pending=null;
+ if(!quiet&&root.id==='tmain'&&ROLE==='teacher')T.narKey=T.stage+'.'+step;
  if(!quiet&&shown.length&&NAR.on&&root.id==='tmain'){
   const tg=shown.length<=2?shown.filter(e=>e.dataset.n):[];
   NAR.pending=new Promise(res=>setTimeout(()=>{if(tg.length){const p=TTS.play(tg.flatMap(e=>e.dataset.listen?[NAR.el(e.dataset.n),NAR.el(LISTEN_V.intro),LISTEN.el(e.dataset.listen)]:[NAR.el(e.dataset.n)]));const tok=TTS.token;p.then(()=>{res();if(spotEl&&tok===TTS.token)SPOT.trigger(spotEl.dataset.spot);if(tok!==TTS.token||AGENT.on)return;if(NAR.auto)setTimeout(()=>NAR.next(),800);else BUILD.after(root,600)})}
@@ -1791,7 +1797,7 @@ function teacherRender(){
  tm.innerHTML=stageHead(st)+introExtra(st)+`<div id="tbody"></div><div id="live" class="center mt"></div><div class="taphint" id="taphint">🖱️ انقر على الشاشة أو اضغط مسافة لإظهار العنصر التالي · انقر على أي جملة لسماعها</div>`;
  drawTBody(false);
  T.nsteps=countSteps(tm);T.step=Math.min(Math.max(T.step,1),T.nsteps);
- applySteps(tm,T.step);updateStepUI();teacherPanel();updateLive();
+ applySteps(tm,T.step,T.narKey===T.stage+'.'+T.step);updateStepUI();teacherPanel();updateLive();
  tm.onclick=e=>{if(e.target.closest('button,a,input,select,textarea,label,.spk'))return;nextStep()};
  clearInterval(T.tick);T.tick=setInterval(tick,500);tick();
 }
@@ -1828,7 +1834,7 @@ function updateLive(){
  const joined=rosterPeople().filter(x=>x.p&&x.p.joined).length;
  if(EX.includes(st.type)){const n=stageRanking(st.id).length;
   el.innerHTML=(T.go?`<div id="exclock"></div>`:`<button class="btn gold glow gobig" onclick="startEx()">▶ ابدأ الحل للطلاب<small>الطلاب ينتظرون إشارتك · ${fmt(st.solve*60000)} للحل</small></button>`)+`<div class="mt"><span class="pill" style="font-size:1rem;padding:8px 16px">✅ أجاب <b style="color:var(--gold);font-family:Poppins">${n}</b> من <b style="font-family:Poppins">${joined}</b> طالبًا حاضرًا</span></div>`;tick();
-  if(T.reveal||T.view==='dash'||st.type==='poll')drawTBody(true)}
+  if(st.type==='poll'){if(T.go)pollBars(st)}else if(T.reveal||T.view==='dash')drawTBody(true)}
  else el.innerHTML=`<span class="pill">👥 الحاضرون ${joined}</span>`;
 }
 function teacherPanel(){

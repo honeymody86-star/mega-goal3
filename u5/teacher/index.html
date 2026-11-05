@@ -540,6 +540,11 @@ body{background:#fff;color:var(--ink)}
 #scroller > .wrap, #scroller > #tmain{min-height:calc(100% + 2px)}
 html.fsmode,html:fullscreen body{touch-action:pan-y}
 #scroller > #app{min-height:calc(100% + 2px)}
+.readgate{margin:10px auto 0;text-align:center;font-size:.9rem;opacity:.8;animation:pulse .8s infinite alternate}
+.opt:disabled{opacity:.55}
+.flag{display:inline-block;font-size:.72rem;padding:1px 7px;border-radius:999px;margin-inline-start:6px;vertical-align:middle;font-weight:800}
+.flag.fa{background:#fee2e2;color:#b91c1c}.flag.fr{background:#fef3c7;color:#92400e}
+.awaywarn{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:9999;background:#b91c1c;color:#fff;padding:12px 16px;border-radius:14px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.35);max-width:92vw;text-align:center}
 </style>
 </head>
 <body>
@@ -762,6 +767,7 @@ const MODEL={product:'SnackGo Juice 🧃',lines:[
  {en:'Football star [[Sami Ali]] says, “I drink it every day!”',ar:'نجم الكرة سامي علي يقول: «أشربه كل يوم!»',tag:'⭐ Trick 2 · Famous person'},
  {en:'Our [[exclusive]] [[formula]] is made from real fruit.',ar:'تركيبتنا الحصرية مصنوعة من فاكهة حقيقية.',tag:'📚 2 new words · exclusive + formula'},
  {en:'[[Join]] the SnackGo generation today!',ar:'انضم لجيل SnackGo اليوم!',tag:'👥 Finish · Everyone’s doing it'}]};
+const SELF_Q={q:'How well can you explain how ads persuade people now?',tr:'كيف تقيّم قدرتك الآن على شرح أساليب الإعلانات في الإقناع؟'};
 
 // =====================================================================
 //  المزامنة اللحظية
@@ -1551,16 +1557,19 @@ function buildMCQ(el,st,done){
  const start=()=>{if(i===0&&!el.classList.contains('on')){el.addEventListener('shown',show,{once:true});return}show()};
  const show=()=>{
   const q=st.qs[i];dots[i].classList.add('on');
-  $('#qbox',el).innerHTML=`<div class="rise">${qTile(q,i,st.icon,true)}</div><div class="opts mt">${q.o.map((_,k)=>optHTML(q,k,k,tfAlways(q))).join('')}</div>`;
+  const ord=tfAlways(q)?q.o.map((_,k)=>k):shuffle(q.o.map((_,k)=>k));
+  $('#qbox',el).innerHTML=`<div class="rise">${qTile(q,i,st.icon,true)}</div><div class="readgate">📖 اقرأ السؤال أول…</div><div class="opts mt">${ord.map((k,n)=>optHTML(q,k,n,tfAlways(q))).join('')}</div>`;
+  const minR=Math.min(5000,Math.max(2000,1200+((q.q||'')+' '+q.o.join(' ')).split(/\s+/).length*110));
+  $$('.opt',el).forEach(b=>b.disabled=true);setTimeout(()=>{if(!el.isConnected||answered)return;$$('.opt',el).forEach(b=>b.disabled=false);const g=$('.readgate',el);g&&g.remove()},minR);
   if(TTS.sel.auto&&i>0)setTimeout(()=>TTS.play(TTS.collect($('#qbox',el))),300);
   const lim=qSeconds(q,st);const t0=performance.now();let answered=false;
   const cd=cdBar($('#qbox',el),lim,()=>answer(-1));
   $('#qbox',el).scrollIntoView({behavior:'smooth',block:'center'});
   const answer=k=>{$$('.deftr',el).forEach(x=>x.classList.remove('deftr'));
    if(answered)return;answered=true;cd.stop();TTS.stop();
-   const ms=Math.min(Math.round(performance.now()-t0),lim*1000);const ok=k===q.a;
+   const ms=Math.min(Math.round(performance.now()-t0),lim*1000);const ok=k===q.a;const rush=k>=0&&ms<minR+900;
    const pts=ok?Math.round((100/n)*(1+.5*Math.max(0,1-ms/(lim*1000)))):0;
-   rec.push({k,ok,ms,pts});S.qsend&&S.qsend({qi:i,k,ok,ms,pts,n});
+   rec.push({k,ok,ms,pts});S.qsend&&S.qsend({qi:i,k,ok,ms,pts,n,rush});
    $$('.opt',el).forEach(x=>{x.disabled=true;x.classList.add('showar');if(+x.dataset.k===q.a)x.classList.add('right')});
    const b=$(`.opt[data-k="${k}"]`,el);if(b&&!ok)b.classList.add('wrong','shake');
    if(k<0)toast('⏰ انتهى الوقت');
@@ -1571,7 +1580,7 @@ function buildMCQ(el,st,done){
  };
  const finish=self=>{const c=rec.filter(r=>r.ok).length;done({acc:c/n,pts:rec.reduce((a,r)=>a+r.pts,0),ms:rec.reduce((a,r)=>a+r.ms,0),detail:{ans:rec.map(r=>r.k),c,n,self}})};
  const selfAssess=()=>{
-  $('#qbox',el).innerHTML=`<div class="rise">${qTile({q:'How well can you explain a film formula now?',tr:'كيف تقيّم قدرتك الآن على شرح نمط فيلم؟'},null,'target')}</div><div class="opts mt">
+  $('#qbox',el).innerHTML=`<div class="rise">${qTile(typeof SELF_Q!=='undefined'?SELF_Q:{q:'How well did you reach today’s goal?',tr:'كيف تقيّم تحقيقك لهدف الدرس؟'},null,'target')}</div><div class="opts mt">
    ${[['3','🤩','I can do it confidently.','أستطيع ذلك بثقة'],['2','🙂','I can, with a little help.','أستطيع مع مساعدة بسيطة'],['1','🤔','I need more practice.','أحتاج تدريبًا إضافيًا']].map((s,k)=>`<button class="opt rise showar" style="--i:${k}" data-s="${s[0]}"><span class="k" style="font-size:1.4rem">${s[1]}</span><span class="en" style="flex:1">${SAY(s[2])}<span class="oa">${SAYA(s[3],'')}</span></span></button>`).join('')}</div>`;
   $$('.opt',el).forEach(b=>b.onclick=()=>finish(+b.dataset.s));
  };
@@ -1818,6 +1827,8 @@ function applyMsg(m){
  if(m.t==='join'){const p=person(m.id,m.name);p.joined=p.joined||m.ts;p.extra=m.extra}
  if(m.t==='ans'){const p=person(m.id,m.name);p.joined=p.joined||m.ts;if(!p.ans[m.stage])p.ans[m.stage]={pts:m.pts,acc:m.acc,ms:m.ms,detail:m.detail,ts:m.ts}}
  if(m.t==='spotres'){const p=person(m.id,m.name);p.joined=p.joined||m.ts;p.spots=p.spots||{};if(!p.spots[m.qid]||(!p.spots[m.qid].here&&m.here))p.spots[m.qid]={ok:m.ok,here:m.here,pts:m.pts,ms:m.ms||0}}
+ if(m.t==='away'){const p=person(m.id,m.name);p.joined=p.joined||m.ts;p.away=p.away||{n:0,sec:0,st:{}};const k=m.stage+':'+m.n;if(!p.away.st[k]){p.away.st[k]=1;p.away.n++;p.away.sec+=m.sec||0}}
+ if(m.t==='q'&&m.rush){const p=person(m.id,m.name);p.rush=p.rush||{};p.rush[m.stage+':'+m.qi]=1}
  if(m.t==='q'){const p=person(m.id,m.name);p.joined=p.joined||m.ts;p.q=p.q||{};const g=p.q[m.stage]=p.q[m.stage]||{};if(!g[m.qi])g[m.qi]={k:m.k,ok:m.ok,ms:m.ms,pts:m.pts,n:m.n}}
  return true;
 }
@@ -1913,7 +1924,8 @@ function teacherPanel(){
  $$('[data-sp]',pn).forEach(b=>b.onclick=()=>spotlight(b.dataset.sp));
  $$('[data-o]',pn).forEach(b=>b.onclick=()=>{const id=b.dataset.o;T.open[id]=!T.open[id];teacherPanel()});
 }
-function row(i,name,pts,sub,id,det){const open=id&&T.open[id];return `<div class="prow ${i<3?'r'+(i+1):''}" ${id?`data-o="${esc(id)}" style="cursor:pointer"`:''}><span class="rk">${['🥇','🥈','🥉'][i]||i+1}</span><div style="min-width:0"><div class="nm">${esc(name)}</div><div class="sub">${sub}</div></div><span class="pt">${pts}</span>${open?`<div class="det" style="grid-column:1/-1">${det}</div>`:''}</div>`}
+function flagB(id,name){const pp=(id&&T.people[id])||Object.values(T.people).find(p=>p.name===name);if(!pp)return '';const r=pp.rush?Object.keys(pp.rush).length:0;return `${pp.away&&pp.away.n?` <span class="flag fa" title="خرج من الصفحة أثناء الحل">🚪×${pp.away.n}${pp.away.sec?' · '+pp.away.sec+'ث':''}</span>`:''}${r>=2?` <span class="flag fr" title="أجاب بسرعة غير طبيعية">⚡×${r}</span>`:''}`}
+function row(i,name,pts,sub,id,det){const open=id&&T.open[id];return `<div class="prow ${i<3?'r'+(i+1):''}" ${id?`data-o="${esc(id)}" style="cursor:pointer"`:''}><span class="rk">${['🥇','🥈','🥉'][i]||i+1}</span><div style="min-width:0"><div class="nm">${esc(name)}${flagB(id,name)}</div><div class="sub">${sub}</div></div><span class="pt">${pts}</span>${open?`<div class="det" style="grid-column:1/-1">${det}</div>`:''}</div>`}
 function detailHTML(st,r){
  const d=r.detail||{};const ok=(g,t)=>`<div style="font-size:.8rem;padding:3px 0;color:${g?'var(--green)':'var(--red)'}" class="en">${g?'✓':'✗'} ${t}</div>`;
  if(st.type==='mcq')return (d.ans||[]).map((k,i)=>ok(k===st.qs[i].a,`${i+1}. ${k<0?'⏰ انتهى الوقت':esc(st.qs[i].o[k])}${k!==st.qs[i].a?' <span style="color:var(--mute)">→ '+esc(st.qs[i].o[st.qs[i].a])+'</span>':''}`)).join('')+(d.self?`<div style="font-size:.8rem">التقويم الذاتي: ${['','🤔 أحتاج تدريبًا','🙂 أحتاج مساعدة بسيطة','🤩 واثق'][d.self]}</div>`:'');
@@ -2000,6 +2012,13 @@ function exportCSV(){
  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=`نتائج_درس_الكتابة_الشعبة_${T.sec}.csv`;document.body.append(a);a.click();a.remove();
 }
 if(location.hash==='#teacher'||window.TEACHER_PAGE)teacherLock();else studentStart();
+</script>
+<script>
+// الطالب: رصد الخروج من الصفحة أثناء الحل
+(function(){let t0=0;const active=()=>{try{if(ROLE!=='student'||!S.me||!S.sid)return false;const st=STAGES[S.stage];if(!st||st.type==='slide'||st.type==='podium'||st.type==='break')return false;if(S.goStage!==S.stage)return false;return !S.done[S.sid+':'+S.me.id+':'+st.id]}catch(e){return false}};
+ document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){if(active())t0=Date.now()}else if(t0){const sec=Math.round((Date.now()-t0)/1000);t0=0;if(sec<1)return;S.awayN=(S.awayN||0)+1;
+  try{Net.send({t:'away',sid:S.sid,id:S.me.id,name:S.me.name,stage:STAGES[S.stage].id,n:S.awayN,sec})}catch(e){}
+  const b=document.createElement('div');b.className='awaywarn';b.innerHTML='⚠️ طلعت من الصفحة أثناء الحل ('+sec+' ث) — تم تسجيل ذلك عند المعلم. حلّ بنفسك 💪';document.body.append(b);setTimeout(()=>b.remove(),6000)}})})();
 </script>
 </body>
 </html>

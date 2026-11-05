@@ -1764,7 +1764,7 @@ function renderStudent(){
  applySteps(main,S.step);
 }
 function nextStage(){let i=S.stage+1;while(i<STAGES.length&&STAGES[i].type==='slide')i++;return i<STAGES.length?i:-1}
-function nextBtn(){const i=nextStage();return i<0?'':`<button class="btn gold mt nxs" style="font-size:1.05rem">التمرين التالي ⬅ <span class="en">${esc(STAGES[i].title)}</span></button>`}
+function nextBtn(){return '';const i=nextStage();return i<0?'':`<button class="btn gold mt nxs" style="font-size:1.05rem">التمرين التالي ⬅ <span class="en">${esc(STAGES[i].title)}</span></button>`}
 function bindNext(root){const b=$('.nxs',root);if(b)b.onclick=()=>{const i=nextStage();if(i<0)return;S.stage=i;S.ahead=true;clap();setTimeout(renderStudent,300)}}
 function showDone(ex,r){
  if(r.detail&&r.detail.fun!=null){ex.innerHTML=`<div class="waiting card qcard pop"><div class="score-big">+${r.pts}</div><h3 class="en">Nice! ${r.detail.fun} ✨</h3><div class="arx">فاصل ممتع — ارجع للدرس الآن 👀</div></div>`;return}

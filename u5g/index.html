@@ -587,6 +587,17 @@ html.fsmode,html:fullscreen body{touch-action:pan-y}
 .flag{display:inline-block;font-size:.72rem;padding:1px 7px;border-radius:999px;margin-inline-start:6px;vertical-align:middle;font-weight:800}
 .flag.fa{background:#fee2e2;color:#b91c1c}.flag.fr{background:#fef3c7;color:#92400e}
 .awaywarn{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:9999;background:#b91c1c;color:#fff;padding:12px 16px;border-radius:14px;font-weight:700;box-shadow:0 8px 24px rgba(0,0,0,.35);max-width:92vw;text-align:center}
+.reptw{overflow:auto;max-height:60vh;margin-top:10px}
+.rept{width:100%;border-collapse:collapse;font-size:.9rem;background:var(--card,#fff)}
+.rept th,.rept td{border:1px solid rgba(0,0,0,.1);padding:6px 8px;text-align:center;white-space:nowrap}
+.rept th{background:#1e1b4b;color:#fff;position:sticky;top:0}
+.rept td.nm{text-align:right;font-weight:700}.rept td.note{white-space:normal;text-align:right;min-width:180px;font-size:.82rem}
+.rept tr.abs td{opacity:.5}.rept td.bad{background:#fee2e2;color:#b91c1c;font-weight:800}.rept td.warn{background:#fef3c7;color:#92400e;font-weight:800}
+.rept.sm{font-size:.75rem}.rept.sm td.note{min-width:120px}
+#repmod{position:fixed;inset:0;z-index:9996;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:12px}
+#repmod .repbox{background:var(--bg,#fff);color:var(--ink,#111);border-radius:20px;padding:18px;width:min(1300px,100%);max-height:94vh;overflow:auto}
+#repmod .reptw{max-height:none}
+@media print{html.printrep body>*:not(#repmod){display:none!important}html.printrep #repmod{position:static;background:none}html.printrep #repmod .repbox{max-height:none;box-shadow:none}html.printrep #repmod button{display:none}html.printrep .rept th{background:#ddd;color:#000}}
 </style>
 </head>
 <body>
@@ -1261,7 +1272,7 @@ const pick=a=>a[Math.floor(Math.random()*a.length)];
 // ---------- الاختيار العشوائي (المعلم) ----------
 const SPOT={cur:null,busy:false,picked:new Set(),w:null,skip:false,
  pool(){return Object.values(T.people).filter(p=>p.joined&&!this.picked.has(p.id))},
- trigger(id){if(this.busy)return this.cur;this.cur=this.run(id).finally(()=>{this.cur=null});return this.cur},
+ trigger(id){if(this.busy)return this.cur;this.qid=id;this.cur=this.run(id).finally(()=>{this.cur=null});return this.cur},
  ov(html){let o=$('#spotov');if(!o){o=h('<div id="spotov"></div>');document.body.append(o)}o.className='on';o.innerHTML=`<div class="spbox pop">${html}<button class="btn sm ghost spskip" id="spskip">⏭ تخطي</button></div>`;const s=$('#spskip',o);if(s)s.onclick=()=>{this.skip=true;this.w&&this.w('skip')}},
  close(){const o=$('#spotov');if(o)o.className=''},
  waitFor(type,id,ms){return new Promise(res=>{const t=setTimeout(()=>{this.w=null;res(null)},ms);this.w=v=>{clearTimeout(t);this.w=null;res(v)};this.want={type,id}})},
@@ -1414,11 +1425,17 @@ function setupModal(){let o=$('#setmod');if(o){o.remove();return}o=h(`<div id="s
 const PAUSE={on:false,t0:0,wasAgent:false,
  btn(){let b=$('#pauseb');const show=ROLE==='teacher'&&!!T.sid;if(!b){if(!show)return;b=h('<button id="pauseb"></button>');b.onclick=()=>this.toggle();document.body.append(b)}b.style.display=show?'':'none';b.classList.toggle('on',this.on);b.textContent=this.on?'▶ استئناف الدرس':'⏸ إيقاف مؤقت'},
  toggle(){this.on?this.resume():this.pause()},
- pause(){if(this.on||!T.sid)return;this.on=true;this.t0=Date.now();this.wasAgent=AGENT.on;if(AGENT.on)AGENT.stop();TTS.stop();if(SPOT.busy){SPOT.skip=true;SPOT.w&&SPOT.w(null);SPOT.close()}
+ pause(){if(this.on||!T.sid)return;this.on=true;this.t0=Date.now();this.wasAgent=AGENT.on;this.at=T.stage+'.'+T.step;this.wasTalk=!T.go&&(audioBusy()||!!NAR.pending);this.spotId=SPOT.busy?SPOT.qid:null;if(AGENT.on)AGENT.stop();TTS.stop();if(SPOT.busy){SPOT.skip=true;SPOT.w&&SPOT.w(null);SPOT.close()}
   Net.send({t:'pause',sid:T.sid,on:true});const o=h('<div id="pauseov" class="tb">⏸ متوقف مؤقتًا — الصوت والعدّاد والوكيل متوقفين · تقدر تشرح وتستخدم كل أزرار الصفحة · اضغط «▶ استئناف الدرس» للمتابعة</div>');document.body.append(o);this.btn()},
  resume(){if(!this.on)return;this.on=false;const d=Date.now()-this.t0;T.start+=d;if(T.goAt)T.goAt+=d;broadcast();Net.send({t:'pause',sid:T.sid,on:false});
   const o=$('#pauseov');o&&o.remove();this.btn();T.narKey=T.stage+'.'+T.step;teacherRender();
-  speak('يلا نكمل يا شباب!').then(()=>{if(this.wasAgent&&!this.on)AGENT.start()})}
+  (async()=>{await speak('يلا نكمل يا شباب!');
+   // نكمل من نفس النقطة: نعيد شرح الخطوة اللي انقطعت، ثم الاختيار العشوائي إن كان انقطع
+   if(!this.on&&this.at===T.stage+'.'+T.step&&(this.wasTalk||this.spotId)){
+    const els=$$('#tmain .b:not(.gch)');const e=els[T.step-1];
+    if(this.wasTalk&&e&&e.dataset.n&&NAR.on){const L=e.dataset.listen?[NAR.el(e.dataset.n),NAR.el(LISTEN_V.intro),LISTEN.el(e.dataset.listen)]:[NAR.el(e.dataset.n)];const p=TTS.play(L);NAR.pending=p;await p}
+    if(!this.on&&this.spotId){const q=this.spotId;this.spotId=null;await SPOT.trigger(q)}}
+   if(this.wasAgent&&!this.on)AGENT.start()})()}
 };
 setInterval(()=>PAUSE.btn(),700);
 document.addEventListener('keydown',e=>{if(ROLE!=='teacher'||!T.sid)return;if(e.target&&/INPUT|TEXTAREA/.test(e.target.tagName))return;if(e.key==='p'||e.key==='P'||e.key==='ح'){e.preventDefault();PAUSE.toggle()}},true);
@@ -1633,10 +1650,11 @@ function cdBar(host,secs,onEnd){
  return {stop(){dead=true;clearInterval(iv);i.style.transition='none';b.classList.add('stopped')},left(){return Math.max(0,end-performance.now())}};
 }
 function buildMCQ(el,st,done){
- let i=0;const n=st.qs.length;const rec=[];
+ const PK='mq:'+S.sid+':'+(S.me&&S.me.id)+':'+st.id;const rec=ROLE==='student'?(LS.get(PK,[])||[]):[];let i=rec.length;const n=st.qs.length;
  el.innerHTML=`<div class="qcard card">${st.chart?chartHTML():''}<div class="qmeta"><div class="dots">${st.qs.map(()=>'<i></i>').join('')}</div><span class="pill en">${n} Qs</span></div><div id="qbox"></div></div>`;
  const dots=$$('.dots i',el);const tfAlways=q=>q.oa===TF_AR;
- const start=()=>{if(i===0&&!el.classList.contains('on')){el.addEventListener('shown',show,{once:true});return}show()};
+ rec.forEach((r,j)=>dots[j]&&dots[j].classList.add(r.ok?'ok':'no'));
+ const start=()=>{if(i>=n){st.self?selfAssess():finish();return}if(i===0&&!el.classList.contains('on')){el.addEventListener('shown',show,{once:true});return}show()};
  const show=()=>{
   const q=st.qs[i];dots[i].classList.add('on');
   const ord=tfAlways(q)?q.o.map((_,k)=>k):shuffle(q.o.map((_,k)=>k));
@@ -1651,7 +1669,7 @@ function buildMCQ(el,st,done){
    if(answered)return;answered=true;cd.stop();TTS.stop();
    const ms=Math.min(Math.round(performance.now()-t0),lim*1000);const ok=k===q.a;const rush=k>=0&&ms<minR+900;
    const pts=ok?Math.round((100/n)*(1+.5*Math.max(0,1-ms/(lim*1000)))):0;
-   rec.push({k,ok,ms,pts});S.qsend&&S.qsend({qi:i,k,ok,ms,pts,n,rush});
+   rec.push({k,ok,ms,pts});if(ROLE==='student')LS.set(PK,rec);S.qsend&&S.qsend({qi:i,k,ok,ms,pts,n,rush});
    $$('.opt',el).forEach(x=>{x.disabled=true;x.classList.add('showar');if(+x.dataset.k===q.a)x.classList.add('right')});
    const b=$(`.opt[data-k="${k}"]`,el);if(b&&!ok)b.classList.add('wrong','shake');
    if(k<0)toast('⏰ انتهى الوقت');
@@ -1742,7 +1760,7 @@ function buildTier(el,st,done){
  function bronze(){
   el.innerHTML=`<div class="qcard card pop">${head('bronze')}<div class="en" style="font-weight:700">${BRONZE_HEAD[0]}</div><div class="qtr">${BRONZE_HEAD[1]}</div>${BRONZE.map((q,i)=>`<div class="mt rise" style="--i:${i}"><b class="en">${esc(q.q)}</b> <small class="muted">${q.tr}</small><div class="opts mt">${q.o.map((o,k)=>`<button class="opt en" data-q="${i}" data-k="${k}"><span>${esc(o)}</span></button>`).join('')}</div></div>`).join('')}<div class="card mt en" id="prev" style="background:var(--bg2);line-height:1.8">…</div><div class="row mt"><span class="grow"></span><button class="btn gold" id="sub" disabled>Submit · تسليم ✓</button></div><div class="artr" id="art"></div></div>`;
   bindBack();const pick={};let fin=false;
-  $$('.opt',el).forEach(b=>b.onclick=()=>{const q=+b.dataset.q;pick[q]=+b.dataset.k;$$(`.opt[data-q="${q}"]`,el).forEach(x=>x.style.borderColor=x===b?'var(--gold)':'');
+  $$('.opt',el).forEach(b=>b.onclick=()=>{const q=+b.dataset.q;if(pick[q]!=null)return;pick[q]=+b.dataset.k;$$(`.opt[data-q="${q}"]`,el).forEach(x=>{if(x!==b)x.disabled=true});$$(`.opt[data-q="${q}"]`,el).forEach(x=>x.style.borderColor=x===b?'var(--gold)':'');
    $('#prev',el).textContent=BRONZE.map((q,i)=>pick[i]!=null?q.o[pick[i]]:'…').join(' ');$('#sub',el).disabled=Object.keys(pick).length<BRONZE.length});
   const sub=force=>{if(fin)return;fin=true;el._cd&&el._cd.stop();if(force)toast('⏰ انتهى الوقت');let ok=0;BRONZE.forEach((q,i)=>{const g=pick[i]===q.a;ok+=g;$$(`.opt[data-q="${i}"]`,el).forEach(x=>{x.disabled=true;if(+x.dataset.k===q.a)x.classList.add('right');else if(+x.dataset.k===pick[i])x.classList.add('wrong')})});
    $('#sub',el).disabled=true;const a=$('#art',el);a.innerHTML='<b>الترجمة:</b> '+BRONZE_AR;a.classList.add('on');
@@ -1985,8 +2003,11 @@ function updateLive(){
 }
 function teacherPanel(){
  const pn=$('#tpanel');if(!pn)return;const st=STAGES[T.stage];
+ if(!pn._sb){pn._sb=1;['scroll','touchmove','wheel'].forEach(ev=>pn.addEventListener(ev,()=>{T.panelBusy=Date.now()},{passive:true,capture:true}))}
+ if(Date.now()-(T.panelBusy||0)<1500&&pn.innerHTML){clearTimeout(T._pnT);T._pnT=setTimeout(teacherPanel,1600);return}
+ const _scr=[pn.scrollTop,...$$('.plist,.det',pn).map(x=>x.scrollTop)],_pg=($('#scroller')||{}).scrollTop;
  const ppl=rosterPeople();const joined=ppl.filter(x=>x.p&&x.p.joined);
- const tabs=[['stage','هذه المرحلة'],['all','الترتيب العام'],['spot','🎯 العشوائي'],['write','الكتابات'],['att','الحضور']];
+ const tabs=[['stage','هذه المرحلة'],['all','الترتيب العام'],['spot','🎯 العشوائي'],['write','الكتابات'],['att','الحضور'],['rep','📄 التقرير']];
  let body='';
  if(T.tab==='stage'){
   body=`<div class="tsplit">🗣️ شرح المعلم <b>${fmt(st.talk*60000)}</b>${st.solve?` · ✍️ حل الطلاب <b>${fmt(st.solve*60000)}</b>`:''}</div><div class="ind">${st.ind.map(x=>`<span>${x} · ${IND[x]||''}</span>`).join('')}</div>`;
@@ -1998,12 +2019,14 @@ function teacherPanel(){
   }else body+=`<div class="stat"><div><b>${joined.length}</b><small>حاضر</small></div><div><b>${ppl.length-joined.length}</b><small>غير متصل</small></div><div><b>${T.stage+1}/${STAGES.length}</b><small>المرحلة</small></div></div><div class="muted center" style="font-size:.85rem">مرحلة عرض — كل نقرة تُظهر عنصرًا على شاشتك وشاشات الطلاب.</div>`+overallList(5);
  }
  if(T.tab==='all')body=overallList(999);
+ if(T.tab==='rep')body=`<div class="center"><p class="muted" style="font-size:.85rem">تقرير لكل طالب: النقاط، الإتقان، المراحل، الاختيار العشوائي، مرات الخروج من الصفحة، والإجابات السريعة جدًا.</p><button class="btn gold" id="repv">📄 عرض التقرير</button> <button class="btn" id="repc">⬇️ Excel (CSV)</button></div>${reportTable(true)}`;
  if(T.tab==='write'){const ws=Object.values(T.people).filter(p=>p.ans.write).sort((a,b)=>b.ans.write.pts-a.ans.write.pts);
   body=`<div class="plist">${ws.map(p=>{const a=p.ans.write;return `<div class="wcard"><div class="row"><b>${esc(p.name)}</b><span class="grow"></span><span class="pill">${TIERS[a.detail.tier].ar} · ${Math.round(a.acc*100)}%</span></div><p>${esc(a.detail.text)}</p><button class="btn sm" data-sp="${esc(p.id)}">🔦 اعرض على الشاشة</button></div>`}).join('')||'<div class="muted center">لا توجد كتابات بعد</div>'}</div>`}
  if(T.tab==='spot'){const rows=Object.values(T.people).flatMap(p=>Object.entries(p.spots||{}).map(([q,r])=>({p,q,r})));
   body=`<div class="stat"><div><b>${rows.length}</b><small>اختيار</small></div><div><b>${rows.filter(x=>x.r.ok).length}</b><small>صحيح</small></div><div><b>${rows.filter(x=>!x.r.here).length}</b><small>لم يستجب</small></div></div><div class="plist">${rows.map((x,i)=>row(i+9,x.p.name,x.r.pts,`${ADS[x.q]?esc(ADS[x.q].name):x.q} · ${x.r.here?(x.r.ok?'✅ صحيح':'❌ خطأ'):'😴 لم يضغط موجود'}`)).join('')||'<div class="muted center">لم يتم اختيار أي طالب بعد</div>'}</div>`}
  if(T.tab==='att')body=`<div class="stat"><div><b>${joined.length}</b><small>حاضر</small></div><div><b>${ppl.length-joined.length}</b><small>غير متصل</small></div><div><b>${ppl.length}</b><small>الكشف</small></div></div><div class="plist"><div class="chips">${ppl.map(x=>`<span class="nchip ${x.p&&x.p.joined?'':'away'}">${x.p&&x.p.joined?'🟢':'⚪'} ${esc(x.name)}</span>`).join('')}</div></div>`;
  pn.innerHTML=`<div class="tabs">${tabs.map(([k,t])=>`<button class="tab ${T.tab===k?'on':''}" data-t="${k}">${t}</button>`).join('')}</div>${body}`;
+ pn.scrollTop=_scr[0]||0;$$('.plist,.det',pn).forEach((x,i)=>{if(_scr[i+1])x.scrollTop=_scr[i+1]});const _sc=$('#scroller');if(_sc&&_pg&&_sc.scrollTop!==_pg)_sc.scrollTop=_pg;
  $$('.tab',pn).forEach(b=>b.onclick=()=>{T.tab=b.dataset.t;teacherPanel()});
  $$('[data-sp]',pn).forEach(b=>b.onclick=()=>spotlight(b.dataset.sp));
  $$('[data-o]',pn).forEach(b=>b.onclick=()=>{const id=b.dataset.o;T.open[id]=!T.open[id];teacherPanel()});
@@ -2103,6 +2126,21 @@ if(location.hash==='#teacher'||window.TEACHER_PAGE)teacherLock();else studentSta
  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){if(active())t0=Date.now()}else if(t0){const sec=Math.round((Date.now()-t0)/1000);t0=0;if(sec<1)return;S.awayN=(S.awayN||0)+1;
   try{Net.send({t:'away',sid:S.sid,id:S.me.id,name:S.me.name,stage:STAGES[S.stage].id,n:S.awayN,sec})}catch(e){}
   const b=document.createElement('div');b.className='awaywarn';b.innerHTML='⚠️ طلعت من الصفحة أثناء الحل ('+sec+' ث) — تم تسجيل ذلك عند المعلم. حلّ بنفسك 💪';document.body.append(b);setTimeout(()=>b.remove(),6000)}})})();
+</script>
+<script>
+function reportRows(){const ppl=rosterPeople();const ov=overall();const ex=STAGES.filter(s=>EX.includes(s.type)&&s.type!=='poll');
+ return ppl.map(x=>{const p=x.p;const o=p?ov.find(r=>r.p.id===p.id):null;const sp=Object.values((p&&p.spots)||{});const aw=(p&&p.away)||{n:0,sec:0};const rush=p&&p.rush?Object.keys(p.rush).length:0;
+  const done=p?ex.filter(s=>liveRec(p,s.id)).length:0;const w=p&&p.ans&&p.ans.write;
+  let note=[];if(!p||!p.joined)note.push('غائب');else{if(aw.n)note.push('خرج من الصفحة '+aw.n+' مرة');if(rush>=2)note.push('إجابات سريعة جدًا ('+rush+')');if(done<ex.length)note.push('لم يكمل '+(ex.length-done)+' تمرين');if(sp.some(s=>!s.here))note.push('لم يستجب للعشوائي')}
+  return {name:x.name,att:p&&p.joined?'حاضر':'غائب',pts:o?Math.round(+o.pts||0):0,acc:o?Math.round((+o.acc||0)*100):0,done:done+'/'+ex.length,spot:sp.length?sp.filter(s=>s.ok).length+'/'+sp.length:'—',away:aw.n,awaySec:aw.sec,rush,write:w?TIERS[w.detail.tier].ar+' '+Math.round(w.acc*100)+'%':'—',note:note.join(' · ')||'✅ ممتاز'}}).sort((a,b)=>b.pts-a.pts)}
+const REPH=['#','الطالب','الحضور','النقاط','الإتقان','التمارين','العشوائي','خروج من الصفحة','مدة الخروج (ث)','إجابات سريعة','الكتابة','ملاحظات'];
+function reportTable(small){const R=reportRows();return `<div class="reptw"><table class="rept ${small?'sm':''}"><thead><tr>${REPH.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${R.map((r,i)=>`<tr class="${r.att==='غائب'?'abs':''}"><td>${i+1}</td><td class="nm">${esc(r.name)}</td><td>${r.att}</td><td><b>${r.pts}</b></td><td>${r.acc}%</td><td>${r.done}</td><td>${r.spot}</td><td class="${r.away?'bad':''}">${r.away||0}</td><td class="${r.awaySec?'bad':''}">${r.awaySec||0}</td><td class="${r.rush>=2?'warn':''}">${r.rush||0}</td><td>${r.write}</td><td class="note">${esc(r.note)}</td></tr>`).join('')}</tbody></table></div>`}
+function reportCSV(){const R=reportRows();const rows=[REPH,...R.map((r,i)=>[i+1,r.name,r.att,r.pts,r.acc+'%',r.done,r.spot,r.away,r.awaySec,r.rush,r.write,r.note])];
+ const csv='\ufeff'+rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\r\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));a.download=`تقرير-${document.title.split('·')[0].trim()}-الشعبة${T.sec}-${new Date().toISOString().slice(0,10)}.csv`;document.body.append(a);a.click();setTimeout(()=>a.remove(),500)}
+function reportView(){let o=document.getElementById('repmod');if(o)o.remove();o=document.createElement('div');o.id='repmod';
+ o.innerHTML=`<div class="repbox"><div class="row" style="gap:8px;flex-wrap:wrap"><h2 style="margin:0">📄 تقرير الطلاب — الشعبة ${T.sec} · ${esc(document.title)}</h2><span class="grow"></span><button class="btn" id="repc2">⬇️ Excel</button><button class="btn" id="repp">🖨️ طباعة / PDF</button><button class="btn gold" id="repx">✖ إغلاق</button></div><div class="muted" style="font-size:.85rem;margin:6px 0">${new Date().toLocaleString('ar-SA')} · الخروج من الصفحة يُرصد أثناء حل التمارين فقط</div>${reportTable(false)}</div>`;
+ document.body.append(o);o.querySelector('#repx').onclick=()=>o.remove();o.querySelector('#repc2').onclick=reportCSV;o.querySelector('#repp').onclick=()=>{document.documentElement.classList.add('printrep');window.print();setTimeout(()=>document.documentElement.classList.remove('printrep'),800)}}
+document.addEventListener('click',e=>{const t=e.target.closest&&e.target.closest('#repv,#repc');if(!t)return;e.stopPropagation();t.id==='repv'?reportView():reportCSV()},true);
 </script>
 </body>
 </html>
